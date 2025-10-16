@@ -1,0 +1,3363 @@
+<!--
+===============================================================================
+NeuroEng Voltage Transient Processor - Data Overlay
+===============================================================================
+
+Author:     Ifra Ilyas Ansari
+Created:    2025-08-07
+Modified:   2025-10-15
+Version:    v2.6
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CSV Graph Plotter</title>
+<script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --bg:#0f0f12; --card:#15161a; --muted:#9aa3af; --text:#e5e7eb;
+    --amber:#E6B800; --blue:#1E90FF;
+  }
+  html, body { 
+    height:100%; 
+    background:var(--bg); 
+    color:var(--text); 
+    margin:0; 
+    font-family:Inter, ui-sans-serif, system-ui, -apple-system;
+  }
+  .container { 
+    display:grid; 
+    grid-template-columns: 320px 1fr; 
+    gap:16px; 
+    padding:16px; 
+    box-sizing:border-box; 
+    height:100%;
+  }
+  .container.analysis-mode { 
+    grid-template-columns: 320px 1fr 320px; 
+  }
+  .sidebar { 
+    background:var(--card); 
+    border-radius:16px; 
+    padding:16px; 
+    overflow:auto; 
+  }
+  .main-content { 
+    background:var(--card); 
+    border-radius:16px; 
+    padding:16px; 
+    overflow:auto; 
+  }
+  .title { 
+    font-size:18px; 
+    font-weight:700; 
+    margin:0 0 8px; 
+  }
+  .description { 
+    color:var(--muted); 
+    font-size:12px; 
+    margin:4px 0 12px; 
+  }
+  .file-input-button { 
+    display:inline-block; 
+    background:#22252b; 
+    padding:10px 12px; 
+    border-radius:10px; 
+    cursor:pointer; 
+    font-weight:600; 
+    border:1px solid #2a2d34; 
+  }
+  .file-list { 
+    margin-top:12px; 
+    border-top:1px solid #2a2d34; 
+  }
+  .file-item { 
+    display:flex; 
+    justify-content:space-between; 
+    align-items:center; 
+    padding:10px 0; 
+    border-bottom:1px solid #2a2d34; 
+    gap:8px;
+  }
+  .file-item button { 
+    background:#22252b; 
+    border:1px solid #2a2d34; 
+    color:var(--text); 
+    border-radius:8px; 
+    padding:6px 10px; 
+    cursor:pointer; 
+  }
+  .toolbar { 
+    display:flex; 
+    gap:8px; 
+    align-items:center; 
+    margin:8px 0 12px; 
+    flex-wrap:wrap; 
+  }
+  .plot-container { 
+    width:100%; 
+    height:72vh; 
+    min-height:420px; 
+    background:#ffffff; 
+    border-radius:12px; 
+  }
+  .status-text {
+    color:var(--muted);
+    font-size:14px;
+  }
+  .tab-container {
+    display:flex;
+    gap:4px;
+    margin-bottom:12px;
+  }
+  .tab-button {
+    background:#22252b;
+    border:1px solid #2a2d34;
+    color:var(--text);
+    padding:8px 16px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:600;
+    transition:all 0.2s ease;
+  }
+  .tab-button.active {
+    background:var(--amber);
+    color:#000;
+    border-color:var(--amber);
+  }
+  .tab-button:hover:not(.active) {
+    background:#2a2d34;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Sidebar for file selection -->
+  <aside class="sidebar">
+    <h1 class="title">CSV Graph Plotter</h1>
+    <p class="description">
+      Upload CSV files with TIME, CH1 (Voltage), and CH2 (Current) columns to plot voltage and current graphs.
+    </p>
+
+    <!-- Hidden file input -->
+    <input id="csvFileInput" type="file" accept=".csv" multiple style="display:none" />
+    <label class="file-input-button" for="csvFileInput">📁 Choose CSV Files</label>
+
+    <!-- List of loaded files -->
+    <div class="file-list" id="loadedFilesList"></div>
+  </aside>
+
+  <!-- Main content area -->
+  <main class="main-content">
+    <!-- Toolbar with navigation and export buttons -->
+    <div class="toolbar">
+      <button id="previousFileButton">◀ Previous</button>
+      <button id="nextFileButton">Next ▶</button>
+      <span id="currentFileStatus" class="status-text"></span>
+      <span style="flex:1 1 auto"></span>
+      <button id="toggleMarkersButton">🎯 Show Markers</button>
+      <button id="extendedPulseButton">📏 Hide Extended Pulse</button>
+      <button id="fillPulseAreaButton">🎨 Show Area Fill</button>
+      <button id="showPulsePointsButton">📍 Show Pulse Points</button>
+      <button id="zoomToPulseButton">🔍 Zoom to Pulse</button>
+    </div>
+
+<!-- Tab container for five different views -->
+<div class="tab-container">
+  <button id="rawTab" class="tab-button active">Raw Data</button>
+  <button id="pulseTab" class="tab-button">Pulse Detection</button>
+  <button id="shiftedTab" class="tab-button">Time Shifted</button>
+  <button id="analysisTab" class="tab-button">Voltage picker</button>
+  <button id="exportTab" class="tab-button">Export</button>
+</div>
+
+    <!-- Plot area - hidden when in Export view -->
+    <div id="plotArea" class="plot-container"></div>
+    
+  <!-- Export view - only shown when Export tab is active -->
+    <div id="exportView" class="export-view" style="display:none; height:72vh; min-height:420px; background:var(--card); border-radius:12px; padding:20px; text-align:center;">
+      <div style="max-width:600px; margin:0 auto;">
+        <h2 style="font-size:24px; margin-bottom:30px;">Export Data</h2>
+        
+        <!-- EXPORT ALL section -->
+        <div style="background:#1a4d3a; padding:20px; border-radius:12px; margin-bottom:20px; border:2px solid #28a745;">
+          <h3 style="color:#28a745; margin-bottom:15px; font-size:20px;">📦 Export All Files</h3>
+          <p style="margin-bottom:20px;">Export data from all loaded CSV files at once.</p>
+          
+          <button id="exportAllPulseCsvButton" style="background:#28a745; color:#fff; border:none; padding:15px 30px; border-radius:8px; font-size:18px; font-weight:600; cursor:pointer; display:block; width:100%; margin-bottom:10px;">
+            ⬇️ Export All Pulse CSV Files
+          </button>
+          
+          <button id="exportAllDataCsvButton" style="background:#28a745; color:#fff; border:none; padding:15px 30px; border-radius:8px; font-size:18px; font-weight:600; cursor:pointer; display:block; width:100%; margin-bottom:10px;">
+            ⬇️ Export All Data CSV Files
+          </button>
+          
+          <button id="exportAllPngButton" style="background:#28a745; color:#fff; border:none; padding:15px 30px; border-radius:8px; font-size:18px; font-weight:600; cursor:pointer; display:block; width:100%; margin-bottom:15px;">
+            ⬇️ Export All PNG Files
+          </button>
+          
+          <p style="font-size:12px; color:var(--muted); text-align:left; margin-top:15px;">
+            Creates separate files for each loaded file:<br>
+            • Pulse CSV: Exports pulse region data with time-shifted values<br>
+            • Data CSV: Exports all data points from each file<br>
+            • PNG: Exports plot images for each file<br>
+            • Files will be downloaded individually with descriptive names
+          </p>
+        </div>
+        
+        <!-- Single file export section -->
+        <div style="background:#22252b; padding:20px; border-radius:12px; margin-bottom:20px;">
+          <h3 style="color:var(--amber); margin-bottom:15px; font-size:18px;">📄 Current File Export</h3>
+          <p style="margin-bottom:20px;">Export the detected pulse region data to a CSV file with both original and time-shifted values.</p>
+          
+          <button id="exportPulseCsvButtonLarge" style="background:var(--amber); color:#000; border:none; padding:15px 30px; border-radius:8px; font-size:18px; font-weight:600; cursor:pointer; display:block; width:100%; margin-bottom:15px;">
+            ⬇️ Export Pulse CSV
+          </button>
+          
+          <p style="font-size:12px; color:var(--muted); text-align:left; margin-top:15px;">
+            The exported CSV file will contain:<br>
+            • Index of each data point<br>
+            • Original time values (microseconds)<br>
+            • Time-shifted values relative to pulse start (microseconds)<br>
+            • Voltage values (V)<br>
+            • Current values (A)
+          </p>
+        </div>
+        
+        <div style="background:#22252b; padding:20px; border-radius:12px; margin-bottom:20px;">
+          <button id="exportPngButtonLarge" style="background:var(--amber); color:#000; border:none; padding:15px 30px; border-radius:8px; font-size:18px; font-weight:600; cursor:pointer; display:block; width:100%; margin-bottom:10px;">
+            ⬇️ Export Plot as PNG
+          </button>
+          
+          <button id="exportVoltagePickerPngButtonLarge" style="background:var(--amber); color:#000; border:none; padding:15px 30px; border-radius:8px; font-size:18px; font-weight:600; cursor:pointer; display:block; width:100%; margin-bottom:15px;">
+            ⬇️ Export Voltage Picker PNG
+          </button>
+          
+          <button id="exportAllVoltagePickerPngButton" style="background:#28a745; color:#fff; border:none; padding:15px 30px; border-radius:8px; font-size:18px; font-weight:600; cursor:pointer; display:block; width:100%; margin-bottom:15px;">
+            ⬇️ Export All Voltage Picker PNG
+          </button>
+          
+          <p style="font-size:12px; color:var(--muted); text-align:left; margin-top:15px;">
+            • Export Plot as PNG: Exports the current plot view as displayed<br>
+            • Export Voltage Picker PNG: Exports only the highlighted pulse regions (voltage picker view)
+          </p>
+        </div>
+        
+        <div style="background:#22252b; padding:20px; border-radius:12px;">
+          <button id="exportCsvButtonLarge" style="background:var(--amber); color:#000; border:none; padding:15px 30px; border-radius:8px; font-size:18px; font-weight:600; cursor:pointer; display:block; width:100%; margin-bottom:15px;">
+            ⬇️ Export All Data as CSV
+          </button>
+          
+          <p style="font-size:12px; color:var(--muted); text-align:left; margin-top:15px;">
+            Exports all data points from the current file as a CSV file.
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Right sidebar for analysis mode (initially hidden) -->
+  <aside id="rightSidebar" class="sidebar" style="display:none;">
+    <h1 class="title">Manual Analysis</h1>
+    <p class="description">
+      Click on voltage points in the graph to select them for analysis. Select 8 points: v1, v2, v3, v4, v5, v6, v7, and v8.
+    </p>
+    
+    <!-- Manual Point Selection Instructions -->
+    <div style="margin-bottom:20px; padding:12px; background:#22252b; border-radius:8px; border-left:4px solid var(--amber);">
+      <div style="font-weight:600; margin-bottom:8px; color:var(--amber);">Instructions:</div>
+      <div style="font-size:12px; line-height:1.4;">
+        1. Click on the voltage graph to select points<br>
+        2. Points will be assigned in order: v1 → v2 → v3 → v4 → v5 → v6 → v7 → v8<br>
+        3. Use "Clear All" to reset and start over<br>
+        4. Individual points can be cleared using their "Clear" buttons
+      </div>
+    </div>
+    
+    <!-- Current Selection Status -->
+    <div style="margin-bottom:20px;">
+      <div style="font-weight:600; margin-bottom:8px;">Next Point to Select:</div>
+      <div id="nextPointIndicator" style="font-size:14px; color:var(--amber); font-weight:600;">v1</div>
+    </div>
+    
+    <!-- Manual Point Selection Controls -->
+    <div style="margin-bottom:20px;">
+      <button 
+        id="clearAllPointsButton" 
+        style="width:100%; padding:8px; background:#dc3545; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer; margin-bottom:8px;"
+      >
+        Clear All Points
+      </button>
+      <button 
+        id="toggleSelectionModeButton" 
+        style="width:100%; padding:8px; background:var(--blue); color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer;"
+      >
+        Enable Selection Mode
+      </button>
+    </div>
+    
+    <!-- Selected Points Display -->
+    <div id="manualPointsDisplay">
+      <h3 style="margin:16px 0 8px; font-size:14px; font-weight:600;">Selected Points:</h3>
+      <div id="selectedPointsList" style="font-size:12px; line-height:1.4;">
+        <div style="color:var(--muted); font-style:italic;">No points selected yet</div>
+      </div>
+    </div>
+    
+    <!-- Selection Progress -->
+    <div style="margin-top:16px; padding:12px; background:#22252b; border-radius:8px;">
+      <div style="font-weight:600; margin-bottom:8px; color:var(--amber);">Selection Progress:</div>
+      <div id="selectionProgress" style="font-size:12px; line-height:1.4;">
+        <div style="display:flex; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
+          <span id="v1Status" style="padding:2px 6px; border-radius:4px; background:#dc3545; color:#fff; font-size:10px;">v1</span>
+          <span id="v2Status" style="padding:2px 6px; border-radius:4px; background:#dc3545; color:#fff; font-size:10px;">v2</span>
+          <span id="v3Status" style="padding:2px 6px; border-radius:4px; background:#dc3545; color:#fff; font-size:10px;">v3</span>
+          <span id="v4Status" style="padding:2px 6px; border-radius:4px; background:#dc3545; color:#fff; font-size:10px;">v4</span>
+          <span id="v5Status" style="padding:2px 6px; border-radius:4px; background:#dc3545; color:#fff; font-size:10px;">v5</span>
+          <span id="v6Status" style="padding:2px 6px; border-radius:4px; background:#dc3545; color:#fff; font-size:10px;">v6</span>
+          <span id="v7Status" style="padding:2px 6px; border-radius:4px; background:#dc3545; color:#fff; font-size:10px;">v7</span>
+          <span id="v8Status" style="padding:2px 6px; border-radius:4px; background:#dc3545; color:#fff; font-size:10px;">v8</span>
+        </div>
+        <div style="font-size:10px; color:var(--muted);">Red = Not Selected, Green = Selected</div>
+      </div>
+    </div>
+    
+    <!-- Export Voltage Picker Points -->
+    <div style="margin-top:16px; padding:12px; background:#1a4d3a; border-radius:8px; border:2px solid #28a745;">
+      <div style="font-weight:600; margin-bottom:8px; color:#28a745;">Export Selected Points:</div>
+      <button 
+        id="exportVoltagePickerPointsButton" 
+        style="width:100%; padding:10px; background:#28a745; color:#fff; border:none; border-radius:8px; font-weight:600; cursor:pointer; margin-bottom:8px;"
+      >
+        📊 Export Voltage Picker CSV
+      </button>
+      <div style="font-size:10px; color:var(--muted); line-height:1.3;">
+        Exports the 8 selected voltage points (v1-v8) and corresponding current values (i1-i8) with original row numbers from the CSV file.
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+// Application state to manage loaded files and current selection
+const applicationState = {
+  loadedFiles: [], // Array of file data objects
+  currentFileIndex: -1, // Index of currently displayed file
+  isPlotRendered: false, // Track if plot has been rendered
+  isTimeShifted: false, // Track if currently showing time-shifted view
+  isRawView: true, // Track if currently showing raw data view (default: true)
+  isPulseView: false, // Track if currently showing pulse detection view
+  isAnalysisView: false, // Track if currently showing analysis view
+  isExportView: false, // Track if currently showing export view
+  showDetectionMarkers: false, // Track if detection markers are visible
+  extendedPulseHighlight: true, // Track if extended pulse highlighting is enabled (default: true)
+  zoomToPulse: false, // Track if zoomed to pulse region (default: false)
+  fillPulseArea: false, // Track if pulse area should be filled (default: false)
+  showPulsePoints: false, // Track if individual pulse points should be shown (default: false)
+  selectionModeEnabled: false, // Track if manual point selection mode is enabled
+  nextPointToSelect: 'v1' // Track which point will be selected next
+};
+
+// Plot styling configuration
+const plotColors = {
+  voltage: "#E6B800", // Amber color for voltage
+  current: "#1E90FF"  // Blue color for current
+};
+
+const plotLayout = {
+  paperBackgroundColor: '#ffffff',
+  plotBackgroundColor: '#ffffff',
+  textColor: '#000000',
+  gridColor: '#e5e7eb',
+  axisColor: '#000000'
+};
+
+/**
+ * Get the currently selected file data
+ * @returns {Object|null} Current file data or null if none selected
+ */
+function getCurrentFileData() {
+  if (applicationState.currentFileIndex >= 0 && 
+      applicationState.currentFileIndex < applicationState.loadedFiles.length) {
+    return applicationState.loadedFiles[applicationState.currentFileIndex];
+  }
+  return null;
+}
+
+/**
+ * Parse Tektronix CSV file format
+ * Looks for header row containing TIME, CH1, CH2 columns
+ * @param {File} csvFile - The CSV file to parse
+ * @returns {Promise<Array>} Promise resolving to array of data rows
+ */
+function parseTektronixCsv(csvFile) {
+  return new Promise((resolve, reject) => {
+    const fileReader = new FileReader();
+    
+    fileReader.onerror = () => reject(new Error("Failed to read file"));
+    
+    fileReader.onload = () => {
+      const fileContent = String(fileReader.result);
+      const contentLines = fileContent.split(/\r\n|\n|\r/);
+      
+      // Find the header row (usually around row 16 in Tektronix files)
+      let headerRowIndex = -1;
+      for (let i = 0; i < Math.min(contentLines.length, 200); i++) {
+        const currentLine = contentLines[i];
+        // Look for TIME, CH1, and CH2 columns
+        if (/TIME/i.test(currentLine) && 
+            /CH\s*1|CH1/i.test(currentLine) && 
+            /CH\s*2|CH2/i.test(currentLine)) {
+          headerRowIndex = i;
+          break;
+        }
+      }
+      
+      if (headerRowIndex < 0) {
+        reject(new Error("CSV header not found. Expected columns: TIME, CH1, CH2"));
+        return;
+      }
+      
+      // Parse CSV starting from header row
+      const csvContent = contentLines.slice(headerRowIndex).join("\n");
+      Papa.parse(csvContent, {
+        header: true,
+        dynamicTyping: true,
+        skipEmptyLines: true,
+        complete: (parseResult) => {
+          // Filter out invalid rows
+          const validRows = parseResult.data.filter(row => 
+            row && 
+            row.TIME != null && 
+            row.CH1 != null && 
+            row.CH2 != null
+          );
+          resolve(validRows);
+        },
+        error: (parseError) => reject(parseError)
+      });
+    };
+    
+    fileReader.readAsText(csvFile);
+  });
+}
+
+/**
+ * Process a CSV file and extract time, voltage, and current data
+ * @param {File} csvFile - The CSV file to process
+ * @returns {Promise<Object>} Promise resolving to processed file data
+ */
+async function processUploadedFile(csvFile) {
+  try {
+    const parsedRows = await parseTektronixCsv(csvFile);
+    
+    // Extract data arrays
+    const timeData = parsedRows.map(row => Number(row.TIME));
+    const voltageData = parsedRows.map(row => Number(row.CH1));
+    const currentData = parsedRows.map(row => Number(row.CH2));
+    
+    return {
+      fileName: csvFile.name,
+      timeValues: timeData,
+      voltageValues: voltageData,
+      currentValues: currentData,
+      dataPointCount: timeData.length
+    };
+  } catch (error) {
+    console.error(`Error processing file ${csvFile.name}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Find minimum and maximum values in current data with their indices
+ * @param {Array} currentValues - Array of current values
+ * @returns {Object} Object containing min/max values and their indices
+ */
+function findCurrentMinMax(currentValues) {
+  if (!currentValues || currentValues.length === 0) {
+    return { minValue: null, maxValue: null, minIndex: -1, maxIndex: -1 };
+  }
+  
+  let minValue = currentValues[0];
+  let maxValue = currentValues[0];
+  let minIndex = 0;
+  let maxIndex = 0;
+  
+  for (let i = 1; i < currentValues.length; i++) {
+    if (currentValues[i] < minValue) {
+      minValue = currentValues[i];
+      minIndex = i;
+    }
+    if (currentValues[i] > maxValue) {
+      maxValue = currentValues[i];
+      maxIndex = i;
+    }
+  }
+  
+  return { minValue, maxValue, minIndex, maxIndex };
+}
+
+/**
+ * Find minimum and maximum values in voltage data with their indices
+ * @param {Array} voltageValues - Array of voltage values
+ * @returns {Object} Object containing min/max values and their indices
+ */
+function findVoltageMinMax(voltageValues) {
+  if (!voltageValues || voltageValues.length === 0) {
+    return { minValue: null, maxValue: null, minIndex: -1, maxIndex: -1 };
+  }
+  
+  let minValue = voltageValues[0];
+  let maxValue = voltageValues[0];
+  let minIndex = 0;
+  let maxIndex = 0;
+  
+  for (let i = 1; i < voltageValues.length; i++) {
+    if (voltageValues[i] < minValue) {
+      minValue = voltageValues[i];
+      minIndex = i;
+    }
+    if (voltageValues[i] > maxValue) {
+      maxValue = voltageValues[i];
+      maxIndex = i;
+    }
+  }
+  
+  return { minValue, maxValue, minIndex, maxIndex };
+}
+
+/**
+ * Find pulse start by combining slope analysis, distance from 0A, and length to CURRENT_MIN
+ * @param {Array} currentValues - Array of current values
+ * @param {Array} timeValues - Array of time values
+ * @param {number} minIndex - Index of the minimum current value
+ * @returns {Object} Object containing pulse start value and index
+ */
+function findPulseStart(currentValues, timeValues, minIndex) {
+  if (!currentValues || !timeValues || currentValues.length === 0 || minIndex < 1) {
+    return { pulseStartValue: null, pulseStartIndex: -1 };
+  }
+  
+  const minValue = currentValues[minIndex];
+  const minTime = timeValues[minIndex];
+  
+  let bestScore = -Infinity;
+  let pulseStartIndex = minIndex;
+  
+  // Find normalization factors
+  let maxAbsSlope = 0;
+  let maxDistanceFromZero = 0;
+  let maxLengthToMin = 0;
+  
+  // First pass: find normalization factors
+  for (let i = minIndex - 1; i >= 0; i--) {
+    const currentValue = currentValues[i];
+    const currentTime = timeValues[i];
+    
+    const deltaY = minValue - currentValue;
+    const deltaX = minTime - currentTime;
+    
+    if (deltaX === 0) continue;
+    
+    const slope = deltaY / deltaX;
+    const absSlope = Math.abs(slope);
+    const distanceFromZero = Math.abs(currentValue);
+    
+    // Calculate length (distance) from current point to CURRENT_MIN
+    // Using Euclidean distance in time-current space
+    const lengthToMin = Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
+    
+    if (absSlope > maxAbsSlope) maxAbsSlope = absSlope;
+    if (distanceFromZero > maxDistanceFromZero) maxDistanceFromZero = distanceFromZero;
+    if (lengthToMin > maxLengthToMin) maxLengthToMin = lengthToMin;
+  }
+  
+  // Second pass: calculate composite score for each point
+  for (let i = minIndex - 1; i >= 0; i--) {
+    const currentValue = currentValues[i];
+    const currentTime = timeValues[i];
+    
+    const deltaY = minValue - currentValue;
+    const deltaX = minTime - currentTime;
+    
+    if (deltaX === 0) continue;
+    
+    const slope = deltaY / deltaX;
+    const distanceFromZero = Math.abs(currentValue);
+    const lengthToMin = Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
+    
+    // Normalize slope (we want negative slopes, so invert for scoring)
+    const normalizedSlope = maxAbsSlope > 0 ? -slope / maxAbsSlope : 0;
+    
+    // Normalize distance from zero (we want points closer to zero)
+    const normalizedDistance = maxDistanceFromZero > 0 ? 1 - (distanceFromZero / maxDistanceFromZero) : 1;
+    
+    // Normalize length to min (we want maximum length for better pulse detection)
+    const normalizedLength = maxLengthToMin > 0 ? lengthToMin / maxLengthToMin : 0;
+    
+    // Composite score with three factors:
+    // 40% weight on slope (steepest dip)
+    // 40% weight on distance from zero (baseline proximity) - increased preference
+    // 20% weight on length to min (pulse duration/extent)
+    const compositeScore = (0.4 * normalizedSlope) + (0.4 * normalizedDistance) + (0.2 * normalizedLength);
+    
+    // Only consider negative slopes (actual dips)
+    if (slope < 0 && compositeScore > bestScore) {
+      bestScore = compositeScore;
+      pulseStartIndex = i;
+    }
+  }
+  
+  return { 
+    pulseStartValue: currentValues[pulseStartIndex], 
+    pulseStartIndex: pulseStartIndex 
+  };
+}
+
+/**
+ * Find voltage pulse start by combining slope analysis, distance from 0V, and length to VOLTAGE_MIN
+ * @param {Array} voltageValues - Array of voltage values
+ * @param {Array} timeValues - Array of time values
+ * @param {number} minIndex - Index of the minimum voltage value
+ * @returns {Object} Object containing pulse start value and index
+ */
+function findVoltagePulseStart(voltageValues, timeValues, minIndex) {
+  if (!voltageValues || !timeValues || voltageValues.length === 0 || minIndex < 1) {
+    return { pulseStartValue: null, pulseStartIndex: -1 };
+  }
+  
+  const minValue = voltageValues[minIndex];
+  const minTime = timeValues[minIndex];
+  
+  let bestScore = -Infinity;
+  let pulseStartIndex = minIndex;
+  
+  // Find normalization factors
+  let maxAbsSlope = 0;
+  let maxDistanceFromZero = 0;
+  let maxLengthToMin = 0;
+  
+  // First pass: find normalization factors
+  for (let i = minIndex - 1; i >= 0; i--) {
+    const currentValue = voltageValues[i];
+    const currentTime = timeValues[i];
+    
+    const deltaY = minValue - currentValue;
+    const deltaX = minTime - currentTime;
+    
+    if (deltaX === 0) continue;
+    
+    const slope = deltaY / deltaX;
+    const absSlope = Math.abs(slope);
+    const distanceFromZero = Math.abs(currentValue);
+    
+    // Calculate length (distance) from current point to VOLTAGE_MIN
+    // Using Euclidean distance in time-voltage space
+    const lengthToMin = Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
+    
+    if (absSlope > maxAbsSlope) maxAbsSlope = absSlope;
+    if (distanceFromZero > maxDistanceFromZero) maxDistanceFromZero = distanceFromZero;
+    if (lengthToMin > maxLengthToMin) maxLengthToMin = lengthToMin;
+  }
+  
+  // Second pass: calculate composite score for each point
+  for (let i = minIndex - 1; i >= 0; i--) {
+    const currentValue = voltageValues[i];
+    const currentTime = timeValues[i];
+    
+    const deltaY = minValue - currentValue;
+    const deltaX = minTime - currentTime;
+    
+    if (deltaX === 0) continue;
+    
+    const slope = deltaY / deltaX;
+    const distanceFromZero = Math.abs(currentValue);
+    const lengthToMin = Math.sqrt((deltaX * deltaX) + (deltaY * deltaY));
+    
+    // Normalize slope (we want negative slopes, so invert for scoring)
+    const normalizedSlope = maxAbsSlope > 0 ? -slope / maxAbsSlope : 0;
+    
+    // Normalize distance from zero (we want points closer to zero)
+    const normalizedDistance = maxDistanceFromZero > 0 ? 1 - (distanceFromZero / maxDistanceFromZero) : 1;
+    
+    // Normalize length to min (we want maximum length for better pulse detection)
+    const normalizedLength = maxLengthToMin > 0 ? lengthToMin / maxLengthToMin : 0;
+    
+    // Composite score with three factors:
+    // 40% weight on slope (steepest dip)
+    // 40% weight on distance from zero (baseline proximity) - increased preference
+    // 20% weight on length to min (pulse duration/extent)
+    const compositeScore = (0.4 * normalizedSlope) + (0.4 * normalizedDistance) + (0.2 * normalizedLength);
+    
+    // Only consider negative slopes (actual dips)
+    if (slope < 0 && compositeScore > bestScore) {
+      bestScore = compositeScore;
+      pulseStartIndex = i;
+    }
+  }
+  
+  return { 
+    pulseStartValue: voltageValues[pulseStartIndex], 
+    pulseStartIndex: pulseStartIndex 
+  };
+}
+
+/**
+ * Find pulse end - the first point crossing to 0 or 0 itself after CURRENT_MAX
+ * @param {Array} currentValues - Array of current values
+ * @param {number} maxIndex - Index of the maximum current value
+ * @returns {Object} Object containing pulse end value and index
+ */
+function findPulseEnd(currentValues, maxIndex) {
+  if (!currentValues || currentValues.length === 0 || maxIndex < 0 || maxIndex >= currentValues.length - 1) {
+    return { pulseEndValue: null, pulseEndIndex: -1 };
+  }
+  
+  // Search from the point after CURRENT_MAX to the end of the data
+  for (let i = maxIndex + 1; i < currentValues.length; i++) {
+    const currentValue = currentValues[i];
+    
+    // Check if current point is exactly 0
+    if (currentValue === 0) {
+      return { 
+        pulseEndValue: currentValue, 
+        pulseEndIndex: i 
+      };
+    }
+    
+    // Check for zero crossing (sign change from previous point)
+    if (i > maxIndex + 1) {
+      const previousValue = currentValues[i - 1];
+      
+      // Zero crossing occurs when signs are different (and neither is zero)
+      if (previousValue !== 0 && currentValue !== 0 && 
+          Math.sign(previousValue) !== Math.sign(currentValue)) {
+        
+        // Determine which point is closer to zero for the crossing
+        if (Math.abs(currentValue) <= Math.abs(previousValue)) {
+          return { 
+            pulseEndValue: currentValue, 
+            pulseEndIndex: i 
+          };
+        } else {
+          return { 
+            pulseEndValue: previousValue, 
+            pulseEndIndex: i - 1 
+          };
+        }
+      }
+    }
+  }
+  
+  // If no zero crossing found, return null (no pulse end detected)
+  return { pulseEndValue: null, pulseEndIndex: -1 };
+}
+
+/**
+ * Find voltage pulse end - the first point crossing to 0 or 0 itself after VOLTAGE_MAX
+ * @param {Array} voltageValues - Array of voltage values
+ * @param {number} maxIndex - Index of the maximum voltage value
+ * @returns {Object} Object containing pulse end value and index
+ */
+function findVoltagePulseEnd(voltageValues, maxIndex) {
+  if (!voltageValues || voltageValues.length === 0 || maxIndex < 0 || maxIndex >= voltageValues.length - 1) {
+    return { pulseEndValue: null, pulseEndIndex: -1 };
+  }
+  
+  // Search from the point after VOLTAGE_MAX to the end of the data
+  for (let i = maxIndex + 1; i < voltageValues.length; i++) {
+    const currentValue = voltageValues[i];
+    
+    // Check if current point is exactly 0
+    if (currentValue === 0) {
+      return { 
+        pulseEndValue: currentValue, 
+        pulseEndIndex: i 
+      };
+    }
+    
+    // Check for zero crossing (sign change from previous point)
+    if (i > maxIndex + 1) {
+      const previousValue = voltageValues[i - 1];
+      
+      // Zero crossing occurs when signs are different (and neither is zero)
+      if (previousValue !== 0 && currentValue !== 0 && 
+          Math.sign(previousValue) !== Math.sign(currentValue)) {
+        
+        // Determine which point is closer to zero for the crossing
+        if (Math.abs(currentValue) <= Math.abs(previousValue)) {
+          return { 
+            pulseEndValue: currentValue, 
+            pulseEndIndex: i 
+          };
+        } else {
+          return { 
+            pulseEndValue: previousValue, 
+            pulseEndIndex: i - 1 
+          };
+        }
+      }
+    }
+  }
+  
+  // If no zero crossing found, return null (no pulse end detected)
+  return { pulseEndValue: null, pulseEndIndex: -1 };
+}
+
+/**
+ * COMMENTED OUT FOR FUTURE REFERENCE - AUTOMATIC ANALYSIS ALGORITHM
+ * Calculate voltage analysis points based on voltage curve behavior
+ * @param {Object} fileData - File data containing time, voltage, and current arrays
+ * @param {number} gapValueMicroseconds - Gap value in microseconds (not used in new algorithm)
+ * @returns {Object} Object containing the calculated points
+ */
+/*
+function calculateVoltageAnalysisPoints(fileData, gapValueMicroseconds) {
+  // Find voltage pulse start
+  const voltageMinMax = findVoltageMinMax(fileData.voltageValues);
+  const voltagePulseStart = findVoltagePulseStart(fileData.voltageValues, fileData.timeValues, voltageMinMax.minIndex);
+  
+  if (voltagePulseStart.pulseStartIndex < 0) {
+    return {
+      v1: null, v2: null, v3: null, v4: null, v5: null,
+      error: "Could not find voltage pulse start"
+    };
+  }
+  
+  // v1 - VOLTAGE_PULSE_START
+  const v1 = {
+    index: voltagePulseStart.pulseStartIndex,
+    time: fileData.timeValues[voltagePulseStart.pulseStartIndex],
+    voltage: voltagePulseStart.pulseStartValue,
+    description: "VOLTAGE_PULSE_START"
+  };
+  
+  // v2 - Find where rapid voltage drop slows down after V1 (within next 10 points, close to 0 time)
+  let v2 = null;
+  const v1Index = voltagePulseStart.pulseStartIndex;
+  
+  // Get current pulse start time for reference (this should be close to time 0)
+  const currentMinMax = findCurrentMinMax(fileData.currentValues);
+  const currentPulseStart = findPulseStart(fileData.currentValues, fileData.timeValues, currentMinMax.minIndex);
+  
+  if (currentPulseStart.pulseStartIndex >= 0 && v1Index < fileData.voltageValues.length - 3) {
+    const pulseStartTime = fileData.timeValues[currentPulseStart.pulseStartIndex];
+    
+    // Look within the next 10 points after V1, but prioritize points close to current pulse start time
+    const maxSearchRange = Math.min(10, fileData.voltageValues.length - v1Index - 1);
+    let bestV2Index = -1;
+    let bestScore = -Infinity;
+    
+    // Calculate voltage drops for the first few points after V1
+    const drops = [];
+    for (let i = v1Index + 1; i < Math.min(v1Index + 5, fileData.voltageValues.length - 1); i++) {
+      const currentVoltage = fileData.voltageValues[i];
+      const nextVoltage = fileData.voltageValues[i + 1];
+      const voltageDrop = currentVoltage - nextVoltage; // Positive = voltage dropping
+      drops.push(voltageDrop);
+    }
+    
+    if (drops.length >= 2) {
+      // Calculate average initial drop rate
+      const avgInitialDrop = drops.reduce((sum, drop) => sum + drop, 0) / drops.length;
+      
+      // Search within next 10 points after V1
+      for (let i = v1Index + 1; i <= v1Index + maxSearchRange && i < fileData.voltageValues.length - 1; i++) {
+        const currentVoltage = fileData.voltageValues[i];
+        const nextVoltage = fileData.voltageValues[i + 1];
+        const currentDrop = currentVoltage - nextVoltage;
+        
+        // Calculate how close this point is to the current pulse start time
+        const timeFromPulseStart = Math.abs(fileData.timeValues[i] - pulseStartTime);
+        const timeProximityScore = 1.0 / (1.0 + timeFromPulseStart * 1e6); // Higher score for closer to pulse start
+        
+        // Calculate drop reduction score (higher when drop slows down significantly)
+        let dropReductionScore = 0;
+        if (avgInitialDrop > 0) {
+          const dropReduction = Math.max(0, (avgInitialDrop - currentDrop) / avgInitialDrop);
+          dropReductionScore = dropReduction;
+        }
+        
+        // Composite score: 70% weight on time proximity, 30% on drop reduction
+        const compositeScore = (0.7 * timeProximityScore) + (0.3 * dropReductionScore);
+        
+        // Only consider points where drop has reduced significantly (at least 30% reduction)
+        if (dropReductionScore > 0.3 && compositeScore > bestScore) {
+          bestScore = compositeScore;
+          bestV2Index = i;
+        }
+      }
+      
+      // If no point with significant drop reduction found, take the point closest to pulse start time within range
+      if (bestV2Index < 0) {
+        let minTimeDistance = Infinity;
+        for (let i = v1Index + 1; i <= v1Index + maxSearchRange && i < fileData.voltageValues.length; i++) {
+          const timeFromPulseStart = Math.abs(fileData.timeValues[i] - pulseStartTime);
+          if (timeFromPulseStart < minTimeDistance) {
+            minTimeDistance = timeFromPulseStart;
+            bestV2Index = i;
+          }
+        }
+      }
+      
+      // Create V2 point if found
+      if (bestV2Index >= 0) {
+        const timeShiftedV2 = (fileData.timeValues[bestV2Index] - pulseStartTime) * 1e6; // Convert to microseconds
+        
+        v2 = {
+          index: bestV2Index,
+          time: fileData.timeValues[bestV2Index],
+          voltage: fileData.voltageValues[bestV2Index],
+          description: `End of rapid voltage drop (${timeShiftedV2.toFixed(2)} µs from pulse start, ${bestV2Index - v1Index} points after V1)`
+        };
+      }
+    }
+  }
+  
+  // v3 - VOLTAGE_MIN
+  const v3 = {
+    index: voltageMinMax.minIndex,
+    time: fileData.timeValues[voltageMinMax.minIndex],
+    voltage: voltageMinMax.minValue,
+    description: "VOLTAGE_MIN"
+  };
+  
+  return { v1, v2, v3, v4: null, v5: null, error: null };
+}
+*/
+
+/**
+ * Manual voltage and current analysis points - store manually selected points
+ */
+const manualVoltagePoints = {
+  v1: null,
+  v2: null,
+  v3: null,
+  v4: null,
+  v5: null,
+  v6: null,
+  v7: null,
+  v8: null
+};
+
+const manualCurrentPoints = {
+  i1: null,
+  i2: null,
+  i3: null,
+  i4: null,
+  i5: null,
+  i6: null,
+  i7: null,
+  i8: null
+};
+
+/**
+ * Set a manual voltage point and corresponding current point
+ * @param {string} pointName - Name of the point (v1, v2, v3, v4, v5, v6, v7, v8)
+ * @param {number} index - Index in the data array
+ * @param {number} time - Time value
+ * @param {number} voltage - Voltage value
+ */
+function setManualVoltagePoint(pointName, index, time, voltage) {
+  if (!['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'].includes(pointName)) {
+    return;
+  }
+  
+  console.log(`Setting manual voltage point ${pointName}:`, { index, time, voltage });
+  
+  // Get current file data to capture corresponding current value
+  const currentFile = getCurrentFileData();
+  if (!currentFile) {
+    console.error('No current file data available');
+    return;
+  }
+  
+  // Get the corresponding current value at the same index
+  const currentValue = currentFile.currentValues[index];
+  
+  // Set the voltage point
+  manualVoltagePoints[pointName] = {
+    index: index,
+    time: time,
+    voltage: voltage,
+    description: `Manually selected ${pointName.toUpperCase()}`
+  };
+  
+  // Set the corresponding current point
+  const currentPointName = pointName.replace('v', 'i'); // v1 -> i1, v2 -> i2, etc.
+  manualCurrentPoints[currentPointName] = {
+    index: index,
+    time: time,
+    current: currentValue,
+    description: `Corresponding current for ${pointName.toUpperCase()}`
+  };
+  
+  console.log('Manual voltage points after setting:', manualVoltagePoints);
+  console.log('Manual current points after setting:', manualCurrentPoints);
+  
+  // Update the UI immediately
+  updateManualPointsDisplay();
+  
+  // Re-render plot to show the updated points with a small delay to ensure UI updates
+  if (applicationState.currentFileIndex >= 0) {
+    setTimeout(() => {
+      renderCurrentFilePlot();
+      // Re-add click handler after plot re-render if selection mode is still enabled
+      if (applicationState.selectionModeEnabled && applicationState.isAnalysisView) {
+        setTimeout(() => {
+          addPlotClickHandler();
+        }, 200);
+      }
+    }, 50);
+  }
+}
+
+/**
+ * Clear a manual voltage point
+ * @param {string} pointName - Name of the point to clear
+ */
+function clearManualVoltagePoint(pointName) {
+  if (!['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'].includes(pointName)) {
+    return;
+  }
+  
+  manualVoltagePoints[pointName] = null;
+  
+  // Clear corresponding current point
+  const currentPointName = pointName.replace('v', 'i');
+  manualCurrentPoints[currentPointName] = null;
+  
+  // Update the UI
+  updateManualPointsDisplay();
+  
+  // Re-render plot to show the updated points
+  if (applicationState.currentFileIndex >= 0) {
+    renderCurrentFilePlot();
+  }
+}
+
+/**
+ * Get manual voltage points in the format expected by the plotting functions
+ * @returns {Object} Object containing the manual points
+ */
+function getManualVoltagePoints() {
+  return {
+    v1: manualVoltagePoints.v1,
+    v2: manualVoltagePoints.v2,
+    v3: manualVoltagePoints.v3,
+    v4: manualVoltagePoints.v4,
+    v5: manualVoltagePoints.v5,
+    error: null
+  };
+}
+
+/**
+ * Create Plotly traces for raw data view (no pulse detection)
+ * @param {Object} fileData - File data containing time, voltage, and current arrays
+ * @returns {Array} Array of Plotly trace objects
+ */
+function createRawPlotTraces(fileData) {
+  // Convert time from seconds to microseconds for display
+  const timeInMicroseconds = fileData.timeValues.map(t => t * 1e6);
+  
+  const traces = [
+    {
+      x: timeInMicroseconds,
+      y: fileData.voltageValues,
+      name: "Voltage",
+      mode: "lines",
+      line: { color: plotColors.voltage, width: 2 },
+      xaxis: "x",
+      yaxis: "y"
+    },
+    {
+      x: timeInMicroseconds,
+      y: fileData.currentValues,
+      name: "Current",
+      mode: "lines",
+      line: { color: plotColors.current, width: 2 },
+      xaxis: "x2",
+      yaxis: "y2"
+    }
+  ];
+  
+  // Add individual data points if enabled
+  if (applicationState.showPulsePoints) {
+    // Add all current data points
+    traces.push({
+      x: timeInMicroseconds,
+      y: fileData.currentValues,
+      name: `ALL CURRENT POINTS (${fileData.currentValues.length} points)`,
+      mode: "markers",
+      marker: { 
+        color: "black", 
+        size: 2, 
+        symbol: "circle"
+      },
+      xaxis: "x2",
+      yaxis: "y2",
+      showlegend: true
+    });
+    
+    // Add all voltage data points
+    traces.push({
+      x: timeInMicroseconds,
+      y: fileData.voltageValues,
+      name: `ALL VOLTAGE POINTS (${fileData.voltageValues.length} points)`,
+      mode: "markers",
+      marker: { 
+        color: "black", 
+        size: 2, 
+        symbol: "circle"
+      },
+      xaxis: "x",
+      yaxis: "y",
+      showlegend: true
+    });
+  }
+  
+  return traces;
+}
+
+/**
+ * Create Plotly traces for voltage and current data
+ * @param {Object} fileData - File data containing time, voltage, and current arrays
+ * @returns {Array} Array of Plotly trace objects
+ */
+function createPlotTraces(fileData) {
+  // Convert time from seconds to microseconds for display
+  let timeInMicroseconds = fileData.timeValues.map(t => t * 1e6);
+  
+  // Apply time shifting if enabled
+  if (applicationState.isTimeShifted) {
+    const currentMinMax = findCurrentMinMax(fileData.currentValues);
+    const pulseStart = findPulseStart(fileData.currentValues, fileData.timeValues, currentMinMax.minIndex);
+    if (pulseStart.pulseStartIndex >= 0) {
+      // Get the time offset at CURRENT_PULSE_START
+      const timeOffset = timeInMicroseconds[pulseStart.pulseStartIndex];
+      // Shift all time values so CURRENT_PULSE_START occurs at time 0
+      timeInMicroseconds = timeInMicroseconds.map(t => t - timeOffset);
+    }
+  }
+  
+  // Find min/max values in current data
+  const currentMinMax = findCurrentMinMax(fileData.currentValues);
+  
+  // Find min/max values in voltage data
+  const voltageMinMax = findVoltageMinMax(fileData.voltageValues);
+  
+  // Find pulse start point using slope analysis for current
+  const pulseStart = findPulseStart(fileData.currentValues, fileData.timeValues, currentMinMax.minIndex);
+  
+  // Find pulse end point - first zero crossing after CURRENT_MAX
+  const pulseEnd = findPulseEnd(fileData.currentValues, currentMinMax.maxIndex);
+  
+  // Find voltage pulse start point using slope analysis
+  const voltagePulseStart = findVoltagePulseStart(fileData.voltageValues, fileData.timeValues, voltageMinMax.minIndex);
+  
+  // Find voltage pulse end point - first zero crossing after VOLTAGE_MAX
+  const voltagePulseEnd = findVoltagePulseEnd(fileData.voltageValues, voltageMinMax.maxIndex);
+  
+  const traces = [];
+  
+  // In Voltage picker (analysis) mode, show only highlighted pulse regions
+  // In other modes, show full raw data traces
+  if (!applicationState.isAnalysisView) {
+    traces.push(
+      {
+        x: timeInMicroseconds,
+        y: fileData.voltageValues,
+        name: "Voltage",
+        mode: "lines",
+        line: { color: plotColors.voltage, width: 2 },
+        xaxis: "x",
+        yaxis: "y"
+      },
+      {
+        x: timeInMicroseconds,
+        y: fileData.currentValues,
+        name: "Current",
+        mode: "lines",
+        line: { color: plotColors.current, width: 2 },
+        xaxis: "x2",
+        yaxis: "y2"
+      }
+    );
+  }
+  
+  // Add voltage pulse highlight region (always visible) if data exists
+  if (voltageMinMax.minIndex >= 0 && voltageMinMax.maxIndex >= 0 && 
+      pulseStart.pulseStartIndex >= 0 && pulseEnd.pulseEndIndex >= 0) {
+    // Use the same time range as current pulse for voltage highlighting
+    let pulseStartIdx = pulseStart.pulseStartIndex;
+    let pulseEndIdx = pulseEnd.pulseEndIndex;
+    
+    // Apply extended pulse highlighting if enabled
+    if (applicationState.extendedPulseHighlight) {
+      // Calculate sampling rate to determine points per microsecond
+      const totalTimeSpan = fileData.timeValues[fileData.timeValues.length - 1] - fileData.timeValues[0]; // in seconds
+      const totalPoints = fileData.timeValues.length;
+      const timePerPoint = totalTimeSpan / (totalPoints - 1); // seconds per point
+      const pointsPer200Microseconds = Math.round(200e-6 / timePerPoint); // points for 200 microseconds
+      
+      // Extend by calculated number of points for 200 microseconds
+      pulseStartIdx = Math.max(0, pulseStartIdx - pointsPer200Microseconds);
+      pulseEndIdx = Math.min(fileData.voltageValues.length - 1, pulseEndIdx + pointsPer200Microseconds);
+    }
+    
+    // Create arrays for the voltage pulse region using current pulse time range
+    const voltagePulseTimeRange = timeInMicroseconds.slice(pulseStartIdx, pulseEndIdx + 1);
+    const voltagePulseRange = fileData.voltageValues.slice(pulseStartIdx, pulseEndIdx + 1);
+    
+    // Create voltage pulse region trace
+    const voltagePulseTrace = {
+      x: voltagePulseTimeRange,
+      y: voltagePulseRange,
+      name: applicationState.extendedPulseHighlight ? "VOLTAGE PULSE REGION (EXTENDED)" : "VOLTAGE PULSE REGION",
+      mode: "lines",
+      line: { 
+        color: "rgba(255, 0, 0, 0.8)", 
+        width: 2 
+      },
+      xaxis: "x",
+      yaxis: "y",
+      showlegend: true
+    };
+    
+    // Add fill only if enabled
+    if (applicationState.fillPulseArea) {
+      voltagePulseTrace.fill = "tonexty";
+      voltagePulseTrace.fillcolor = "rgba(255, 0, 0, 0.2)";
+    }
+    
+    traces.push(voltagePulseTrace);
+  }
+  
+  // Add voltage markers only if markers are enabled and data exists
+  if (applicationState.showDetectionMarkers && voltageMinMax.minIndex >= 0 && voltageMinMax.maxIndex >= 0) {
+    // Add minimum voltage marker
+    traces.push({
+      x: [timeInMicroseconds[voltageMinMax.minIndex]],
+      y: [voltageMinMax.minValue],
+      name: `VOLTAGE_MIN (${voltageMinMax.minValue.toFixed(4)}V)`,
+      mode: "markers",
+      marker: { 
+        color: plotColors.voltage, 
+        size: 12, 
+        symbol: "circle",
+        line: { color: "#FFFFFF", width: 2 }
+      },
+      xaxis: "x",
+      yaxis: "y",
+      showlegend: true
+    });
+    
+    // Add maximum voltage marker
+    traces.push({
+      x: [timeInMicroseconds[voltageMinMax.maxIndex]],
+      y: [voltageMinMax.maxValue],
+      name: `VOLTAGE_MAX (${voltageMinMax.maxValue.toFixed(4)}V)`,
+      mode: "markers",
+      marker: { 
+        color: plotColors.voltage, 
+        size: 12, 
+        symbol: "square",
+        line: { color: "#FFFFFF", width: 2 }
+      },
+      xaxis: "x",
+      yaxis: "y",
+      showlegend: true
+    });
+    
+    // Add voltage pulse start marker if it exists
+    if (voltagePulseStart.pulseStartIndex >= 0) {
+      traces.push({
+        x: [timeInMicroseconds[voltagePulseStart.pulseStartIndex]],
+        y: [voltagePulseStart.pulseStartValue],
+        name: `VOLTAGE_PULSE_START (${voltagePulseStart.pulseStartValue.toFixed(4)}V)`,
+        mode: "markers",
+        marker: { 
+          color: plotColors.voltage, 
+          size: 12, 
+          symbol: "diamond",
+          line: { color: "#FFFFFF", width: 2 }
+        },
+        xaxis: "x",
+        yaxis: "y",
+        showlegend: true
+      });
+    }
+    
+    // Add voltage pulse end marker if it exists
+    if (voltagePulseEnd.pulseEndIndex >= 0) {
+      traces.push({
+        x: [timeInMicroseconds[voltagePulseEnd.pulseEndIndex]],
+        y: [voltagePulseEnd.pulseEndValue],
+        name: `VOLTAGE_PULSE_END (${voltagePulseEnd.pulseEndValue.toFixed(4)}V)`,
+        mode: "markers",
+        marker: { 
+          color: plotColors.voltage, 
+          size: 12, 
+          symbol: "triangle-up",
+          line: { color: "#FFFFFF", width: 2 }
+        },
+        xaxis: "x",
+        yaxis: "y",
+        showlegend: true
+      });
+    }
+  }
+  
+  // Add current pulse highlight region (always visible) if data exists
+  if (currentMinMax.minIndex >= 0 && currentMinMax.maxIndex >= 0 && 
+      pulseStart.pulseStartIndex >= 0 && pulseEnd.pulseEndIndex >= 0) {
+    // Extract the pulse region data
+    let pulseStartIdx = pulseStart.pulseStartIndex;
+    let pulseEndIdx = pulseEnd.pulseEndIndex;
+    
+    // Apply extended pulse highlighting if enabled
+    if (applicationState.extendedPulseHighlight) {
+      // Calculate sampling rate to determine points per microsecond
+      const totalTimeSpan = fileData.timeValues[fileData.timeValues.length - 1] - fileData.timeValues[0]; // in seconds
+      const totalPoints = fileData.timeValues.length;
+      const timePerPoint = totalTimeSpan / (totalPoints - 1); // seconds per point
+      const pointsPer200Microseconds = Math.round(200e-6 / timePerPoint); // points for 200 microseconds
+      
+      // Extend by calculated number of points for 200 microseconds
+      pulseStartIdx = Math.max(0, pulseStartIdx - pointsPer200Microseconds);
+      pulseEndIdx = Math.min(fileData.currentValues.length - 1, pulseEndIdx + pointsPer200Microseconds);
+    }
+    
+    // Create arrays for the pulse region
+    const pulseTimeRange = timeInMicroseconds.slice(pulseStartIdx, pulseEndIdx + 1);
+    const pulseCurrentRange = fileData.currentValues.slice(pulseStartIdx, pulseEndIdx + 1);
+    
+    // Create current pulse region trace
+    const currentPulseTrace = {
+      x: pulseTimeRange,
+      y: pulseCurrentRange,
+      name: applicationState.extendedPulseHighlight ? "PULSE REGION (EXTENDED)" : "PULSE REGION",
+      mode: "lines",
+      line: { 
+        color: "rgba(255, 0, 0, 0.8)", 
+        width: 2 
+      },
+      xaxis: "x2",
+      yaxis: "y2",
+      showlegend: true
+    };
+    
+    // Add fill only if enabled
+    if (applicationState.fillPulseArea) {
+      currentPulseTrace.fill = "tonexty";
+      currentPulseTrace.fillcolor = "rgba(255, 0, 0, 0.2)";
+    }
+    
+    traces.push(currentPulseTrace);
+  }
+  
+  // Add individual pulse points if enabled and pulse data exists
+  if (applicationState.showPulsePoints && currentMinMax.minIndex >= 0 && currentMinMax.maxIndex >= 0 && 
+      pulseStart.pulseStartIndex >= 0 && pulseEnd.pulseEndIndex >= 0) {
+    
+    // Calculate pulse region indices (with extension if enabled)
+    let pulseStartIdx = pulseStart.pulseStartIndex;
+    let pulseEndIdx = pulseEnd.pulseEndIndex;
+    
+    // Apply extended pulse highlighting if enabled
+    if (applicationState.extendedPulseHighlight) {
+      // Calculate sampling rate to determine points per microsecond
+      const totalTimeSpan = fileData.timeValues[fileData.timeValues.length - 1] - fileData.timeValues[0]; // in seconds
+      const totalPoints = fileData.timeValues.length;
+      const timePerPoint = totalTimeSpan / (totalPoints - 1); // seconds per point
+      const pointsPer200Microseconds = Math.round(200e-6 / timePerPoint); // points for 200 microseconds
+      
+      // Extend by calculated number of points for 200 microseconds
+      pulseStartIdx = Math.max(0, pulseStartIdx - pointsPer200Microseconds);
+      pulseEndIdx = Math.min(fileData.currentValues.length - 1, pulseEndIdx + pointsPer200Microseconds);
+    }
+    
+    // Create arrays for the pulse region points
+    const pulseTimeRange = timeInMicroseconds.slice(pulseStartIdx, pulseEndIdx + 1);
+    const pulseCurrentRange = fileData.currentValues.slice(pulseStartIdx, pulseEndIdx + 1);
+    const pulseVoltageRange = fileData.voltageValues.slice(pulseStartIdx, pulseEndIdx + 1);
+    
+    // Add current pulse points
+    traces.push({
+      x: pulseTimeRange,
+      y: pulseCurrentRange,
+      name: `CURRENT PULSE POINTS (${pulseCurrentRange.length} points)`,
+      mode: "markers",
+      marker: { 
+        color: "black", 
+        size: 4, 
+        symbol: "circle"
+      },
+      xaxis: "x2",
+      yaxis: "y2",
+      showlegend: true
+    });
+    
+    // Add voltage pulse points (using same time range as current)
+    traces.push({
+      x: pulseTimeRange,
+      y: pulseVoltageRange,
+      name: `VOLTAGE PULSE POINTS (${pulseVoltageRange.length} points)`,
+      mode: "markers",
+      marker: { 
+        color: "black", 
+        size: 4, 
+        symbol: "circle"
+      },
+      xaxis: "x",
+      yaxis: "y",
+      showlegend: true
+    });
+  }
+  
+  // Add analysis points markers if in analysis view - use manual points
+  if (applicationState.isAnalysisView) {
+    const pointColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#FF9F43', '#A55EEA', '#26DE81']; // Different colors for each point (8 colors)
+    const pointNames = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'];
+    const currentPointNames = ['i1', 'i2', 'i3', 'i4', 'i5', 'i6', 'i7', 'i8'];
+    
+    pointNames.forEach((pointName, index) => {
+      const point = manualVoltagePoints[pointName]; // Access manual points directly
+      if (point) {
+        let pointTimeInMicroseconds;
+        
+        // Handle time coordinate display based on whether the stored time is already shifted
+        if (applicationState.isTimeShifted && Math.abs(point.time) < 1) {
+          // The stored time is already time-shifted (relative to pulse start)
+          pointTimeInMicroseconds = point.time * 1e6;
+        } else {
+          // The stored time is absolute, need to apply shifting for display
+          pointTimeInMicroseconds = point.time * 1e6;
+          
+          // Apply time shifting if enabled
+          if (applicationState.isTimeShifted) {
+            const currentMinMax = findCurrentMinMax(fileData.currentValues);
+            const pulseStart = findPulseStart(fileData.currentValues, fileData.timeValues, currentMinMax.minIndex);
+            if (pulseStart.pulseStartIndex >= 0) {
+              const timeOffset = fileData.timeValues[pulseStart.pulseStartIndex] * 1e6;
+              pointTimeInMicroseconds = pointTimeInMicroseconds - timeOffset;
+            }
+          }
+        }
+        
+        // Add voltage point marker
+        traces.push({
+          x: [pointTimeInMicroseconds],
+          y: [point.voltage],
+          name: `${pointName.toUpperCase()} (${point.voltage.toFixed(4)}V)`,
+          mode: "markers",
+          marker: { 
+            color: pointColors[index], 
+            size: 14, 
+            symbol: "star",
+            line: { color: "#FFFFFF", width: 2 }
+          },
+          xaxis: "x",
+          yaxis: "y",
+          showlegend: true
+        });
+        
+        // Add corresponding current point marker
+        const currentPointName = currentPointNames[index];
+        const currentPoint = manualCurrentPoints[currentPointName];
+        if (currentPoint) {
+          traces.push({
+            x: [pointTimeInMicroseconds],
+            y: [currentPoint.current],
+            name: `${currentPointName.toUpperCase()} (${currentPoint.current.toFixed(4)}A)`,
+            mode: "markers",
+            marker: { 
+              color: pointColors[index], 
+              size: 14, 
+              symbol: "star",
+              line: { color: "#FFFFFF", width: 2 }
+            },
+            xaxis: "x2",
+            yaxis: "y2",
+            showlegend: true
+          });
+        }
+      }
+    });
+  }
+
+  // Add current markers only if markers are enabled and data exists
+  if (applicationState.showDetectionMarkers && currentMinMax.minIndex >= 0 && currentMinMax.maxIndex >= 0) {
+    // Add minimum current marker
+    traces.push({
+      x: [timeInMicroseconds[currentMinMax.minIndex]],
+      y: [currentMinMax.minValue],
+      name: `CURRENT_MIN (${currentMinMax.minValue.toFixed(4)}A)`,
+      mode: "markers",
+      marker: { 
+        color: plotColors.current, 
+        size: 12, 
+        symbol: "circle",
+        line: { color: "#FFFFFF", width: 2 }
+      },
+      xaxis: "x2",
+      yaxis: "y2",
+      showlegend: true
+    });
+    
+    // Add maximum current marker
+    traces.push({
+      x: [timeInMicroseconds[currentMinMax.maxIndex]],
+      y: [currentMinMax.maxValue],
+      name: `CURRENT_MAX (${currentMinMax.maxValue.toFixed(4)}A)`,
+      mode: "markers",
+      marker: { 
+        color: plotColors.current, 
+        size: 12, 
+        symbol: "square",
+        line: { color: "#FFFFFF", width: 2 }
+      },
+      xaxis: "x2",
+      yaxis: "y2",
+      showlegend: true
+    });
+    
+    // Add current pulse start marker if it exists
+    if (pulseStart.pulseStartIndex >= 0) {
+      traces.push({
+        x: [timeInMicroseconds[pulseStart.pulseStartIndex]],
+        y: [pulseStart.pulseStartValue],
+        name: `CURRENT_PULSE_START (${pulseStart.pulseStartValue.toFixed(4)}A)`,
+        mode: "markers",
+        marker: { 
+          color: plotColors.current, 
+          size: 12, 
+          symbol: "diamond",
+          line: { color: "#FFFFFF", width: 2 }
+        },
+        xaxis: "x2",
+        yaxis: "y2",
+        showlegend: true
+      });
+    }
+    
+    // Add current pulse end marker if it exists
+    if (pulseEnd.pulseEndIndex >= 0) {
+      traces.push({
+        x: [timeInMicroseconds[pulseEnd.pulseEndIndex]],
+        y: [pulseEnd.pulseEndValue],
+        name: `CURRENT_PULSE_END (${pulseEnd.pulseEndValue.toFixed(4)}A)`,
+        mode: "markers",
+        marker: { 
+          color: plotColors.current, 
+          size: 12, 
+          symbol: "triangle-up",
+          line: { color: "#FFFFFF", width: 2 }
+        },
+        xaxis: "x2",
+        yaxis: "y2",
+        showlegend: true
+      });
+    }
+  }
+  
+  return traces;
+}
+
+/**
+ * Create Plotly layout configuration
+ * @param {string} plotTitle - Title for the plot
+ * @param {Object} fileData - File data for zoom calculations
+ * @returns {Object} Plotly layout object
+ */
+function createPlotLayout(plotTitle, fileData) {
+  const layout = {
+    title: {
+      text: plotTitle,
+      font: { size: 16, color: plotLayout.textColor }
+    },
+    paper_bgcolor: plotLayout.paperBackgroundColor,
+    plot_bgcolor: plotLayout.plotBackgroundColor,
+    font: { color: plotLayout.textColor },
+    
+    // Create two subplot rows
+    grid: {
+      rows: 2,
+      columns: 1,
+      pattern: 'independent',
+      roworder: 'top to bottom'
+    },
+    
+    margin: { l: 70, r: 20, t: 46, b: 40 },
+    
+    // Top subplot - Voltage
+    xaxis: {
+      title: 'Time (µs)',
+      gridcolor: plotLayout.gridColor,
+      zeroline: false,
+      showline: true,
+      linecolor: plotLayout.axisColor,
+      tickcolor: plotLayout.axisColor
+    },
+    yaxis: {
+      title: 'Voltage (V)',
+      gridcolor: plotLayout.gridColor,
+      zeroline: false,
+      showline: true,
+      linecolor: plotLayout.axisColor,
+      tickcolor: plotLayout.axisColor
+    },
+    
+    // Bottom subplot - Current
+    xaxis2: {
+      title: 'Time (µs)',
+      gridcolor: plotLayout.gridColor,
+      zeroline: false,
+      showline: true,
+      linecolor: plotLayout.axisColor,
+      tickcolor: plotLayout.axisColor
+    },
+    yaxis2: {
+      title: 'Current (A)',
+      gridcolor: plotLayout.gridColor,
+      zeroline: false,
+      showline: true,
+      linecolor: plotLayout.axisColor,
+      tickcolor: plotLayout.axisColor
+    },
+    
+    legend: {
+      orientation: 'h',
+      font: { color: plotLayout.textColor },
+      bgcolor: plotLayout.paperBackgroundColor
+    },
+    
+    // Add subplot labels
+    annotations: [
+      {
+        xref: 'x domain',
+        yref: 'y domain',
+        x: 0.98,
+        y: 0.98,
+        xanchor: 'right',
+        yanchor: 'top',
+        showarrow: false,
+        text: '<b>Voltage vs Time</b>',
+        font: { color: plotLayout.textColor }
+      },
+      {
+        xref: 'x2 domain',
+        yref: 'y2 domain',
+        x: 0.98,
+        y: 0.98,
+        xanchor: 'right',
+        yanchor: 'top',
+        showarrow: false,
+        text: '<b>Current vs Time</b>',
+        font: { color: plotLayout.textColor }
+      }
+    ]
+  };
+  
+  // Apply zoom to pulse region if enabled
+  if (applicationState.zoomToPulse && fileData) {
+    // Convert time from seconds to microseconds for display
+    let timeInMicroseconds = fileData.timeValues.map(t => t * 1e6);
+    
+    // Apply time shifting if enabled
+    if (applicationState.isTimeShifted) {
+      const currentMinMax = findCurrentMinMax(fileData.currentValues);
+      const pulseStart = findPulseStart(fileData.currentValues, fileData.timeValues, currentMinMax.minIndex);
+      if (pulseStart.pulseStartIndex >= 0) {
+        // Get the time offset at CURRENT_PULSE_START
+        const timeOffset = timeInMicroseconds[pulseStart.pulseStartIndex];
+        // Shift all time values so CURRENT_PULSE_START occurs at time 0
+        timeInMicroseconds = timeInMicroseconds.map(t => t - timeOffset);
+      }
+    }
+    
+    // Find pulse boundaries
+    const currentMinMax = findCurrentMinMax(fileData.currentValues);
+    const voltageMinMax = findVoltageMinMax(fileData.voltageValues);
+    const pulseStart = findPulseStart(fileData.currentValues, fileData.timeValues, currentMinMax.minIndex);
+    const pulseEnd = findPulseEnd(fileData.currentValues, currentMinMax.maxIndex);
+    
+    if (pulseStart.pulseStartIndex >= 0 && pulseEnd.pulseEndIndex >= 0) {
+      // Calculate pulse region indices (with extension if enabled)
+      let pulseStartIdx = pulseStart.pulseStartIndex;
+      let pulseEndIdx = pulseEnd.pulseEndIndex;
+      
+      // Apply extended pulse highlighting if enabled
+      if (applicationState.extendedPulseHighlight) {
+        // Calculate sampling rate to determine points per microsecond
+        const totalTimeSpan = fileData.timeValues[fileData.timeValues.length - 1] - fileData.timeValues[0]; // in seconds
+        const totalPoints = fileData.timeValues.length;
+        const timePerPoint = totalTimeSpan / (totalPoints - 1); // seconds per point
+        const pointsPer200Microseconds = Math.round(200e-6 / timePerPoint); // points for 200 microseconds
+        
+        // Extend by calculated number of points for 200 microseconds
+        pulseStartIdx = Math.max(0, pulseStartIdx - pointsPer200Microseconds);
+        pulseEndIdx = Math.min(fileData.voltageValues.length - 1, pulseEndIdx + pointsPer200Microseconds);
+      }
+      
+      // Get time range for zoom
+      const startTime = timeInMicroseconds[pulseStartIdx];
+      const endTime = timeInMicroseconds[pulseEndIdx];
+      const timeMargin = (endTime - startTime) * 0.1; // 10% margin on each side
+      
+      // Get voltage range for zoom
+      const voltageSlice = fileData.voltageValues.slice(pulseStartIdx, pulseEndIdx + 1);
+      const voltageMin = Math.min(...voltageSlice);
+      const voltageMax = Math.max(...voltageSlice);
+      const voltageMargin = (voltageMax - voltageMin) * 0.1; // 10% margin
+      
+      // Get current range for zoom
+      const currentSlice = fileData.currentValues.slice(pulseStartIdx, pulseEndIdx + 1);
+      const currentMin = Math.min(...currentSlice);
+      const currentMax = Math.max(...currentSlice);
+      const currentMargin = (currentMax - currentMin) * 0.1; // 10% margin
+      
+      // Set axis ranges for zoom
+      layout.xaxis.range = [startTime - timeMargin, endTime + timeMargin];
+      layout.xaxis2.range = [startTime - timeMargin, endTime + timeMargin];
+      layout.yaxis.range = [voltageMin - voltageMargin, voltageMax + voltageMargin];
+      layout.yaxis2.range = [currentMin - currentMargin, currentMax + currentMargin];
+    }
+  }
+  
+  return layout;
+}
+
+/**
+ * Update the layout based on current view mode
+ */
+function updateLayoutMode() {
+  const container = document.querySelector('.container');
+  const rightSidebar = document.getElementById('rightSidebar');
+  
+  if (applicationState.isAnalysisView) {
+    container.classList.add('analysis-mode');
+    rightSidebar.style.display = 'block';
+  } else {
+    container.classList.remove('analysis-mode');
+    rightSidebar.style.display = 'none';
+  }
+}
+
+/**
+ * Render the plot for the currently selected file
+ */
+function renderCurrentFilePlot() {
+  const currentFile = getCurrentFileData();
+  if (!currentFile) {
+    return;
+  }
+  
+  let plotTraces;
+  let plotTitle;
+  
+  if (applicationState.isRawView) {
+    // Raw data view - no pulse detection
+    plotTraces = createRawPlotTraces(currentFile);
+    plotTitle = `${currentFile.fileName} - Raw Voltage and Current vs Time`;
+  } else {
+    // Pulse detection view (includes time-shifted and analysis modes)
+    plotTraces = createPlotTraces(currentFile);
+    if (applicationState.isAnalysisView) {
+      plotTitle = `${currentFile.fileName} - Analysis Mode`;
+    } else if (applicationState.isTimeShifted) {
+      plotTitle = `${currentFile.fileName} - Time Shifted View`;
+    } else {
+      plotTitle = `${currentFile.fileName} - Pulse Detection`;
+    }
+  }
+  
+  const plotLayout = createPlotLayout(plotTitle, currentFile);
+  
+  // Create the plot
+  Plotly.newPlot('plotArea', plotTraces, plotLayout, {
+    responsive: true,
+    scrollZoom: true
+  });
+  
+  applicationState.isPlotRendered = true;
+  
+  // Update layout mode
+  updateLayoutMode();
+  
+  // Add click handler if selection mode is enabled and in analysis view
+  if (applicationState.selectionModeEnabled && applicationState.isAnalysisView) {
+    // Use setTimeout to ensure plot is fully rendered before adding click handler
+    setTimeout(() => {
+      addPlotClickHandler();
+    }, 500);
+  }
+  
+  // Ensure proper sizing
+  requestAnimationFrame(() => {
+    Plotly.Plots.resize(document.getElementById('plotArea'));
+  });
+}
+
+/**
+ * Update the status text showing current file information
+ */
+function updateFileStatusDisplay() {
+  const statusElement = document.getElementById('currentFileStatus');
+  
+  if (applicationState.currentFileIndex >= 0 && 
+      applicationState.currentFileIndex < applicationState.loadedFiles.length) {
+    const currentFile = getCurrentFileData();
+    statusElement.textContent = 
+      `File ${applicationState.currentFileIndex + 1} of ${applicationState.loadedFiles.length}: ${currentFile.fileName}`;
+  } else {
+    statusElement.textContent = '';
+  }
+}
+
+/**
+ * Render the list of loaded files in the sidebar
+ */
+function renderLoadedFilesList() {
+  const fileListContainer = document.getElementById('loadedFilesList');
+  fileListContainer.innerHTML = "";
+  
+  applicationState.loadedFiles.forEach((fileData, fileIndex) => {
+    const fileItemDiv = document.createElement('div');
+    fileItemDiv.className = 'file-item';
+    
+    const fileInfoDiv = document.createElement('div');
+    fileInfoDiv.style.minWidth = "0";
+    
+    fileInfoDiv.innerHTML = `
+      <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:210px">
+        ${fileData.fileName}
+      </div>
+      <div style="font-size:12px; color:var(--muted)">
+        ${fileData.dataPointCount} data points
+      </div>
+    `;
+    
+    const plotButton = document.createElement('button');
+    plotButton.textContent = "Plot";
+    plotButton.onclick = () => {
+      applicationState.currentFileIndex = fileIndex;
+      applicationState.isPlotRendered = false;
+      renderCurrentFilePlot();
+      updateFileStatusDisplay();
+    };
+    
+    fileItemDiv.appendChild(fileInfoDiv);
+    fileItemDiv.appendChild(plotButton);
+    fileListContainer.appendChild(fileItemDiv);
+  });
+  
+  updateFileStatusDisplay();
+}
+
+/**
+ * Navigate to the previous file
+ */
+function navigateToPreviousFile() {
+  if (applicationState.loadedFiles.length === 0) return;
+  
+  applicationState.currentFileIndex = 
+    (applicationState.currentFileIndex - 1 + applicationState.loadedFiles.length) % 
+    applicationState.loadedFiles.length;
+  
+  applicationState.isPlotRendered = false;
+  renderCurrentFilePlot();
+  updateFileStatusDisplay();
+  
+  // Auto-calculate analysis if GV value is available and in analysis view
+  autoCalculateAnalysisIfAvailable();
+}
+
+/**
+ * Navigate to the next file
+ */
+function navigateToNextFile() {
+  if (applicationState.loadedFiles.length === 0) return;
+  
+  applicationState.currentFileIndex = 
+    (applicationState.currentFileIndex + 1) % applicationState.loadedFiles.length;
+  
+  applicationState.isPlotRendered = false;
+  renderCurrentFilePlot();
+  updateFileStatusDisplay();
+  
+  // Auto-calculate analysis if GV value is available and in analysis view
+  autoCalculateAnalysisIfAvailable();
+}
+
+/**
+ * Export current plot as PNG image
+ */
+function exportPlotAsPng() {
+  if (applicationState.currentFileIndex < 0) return;
+  
+  const currentFile = getCurrentFileData();
+  const baseFileName = currentFile.fileName.replace(/\.[^.]+$/, "");
+  
+  Plotly.downloadImage('plotArea', {
+    format: 'png',
+    filename: baseFileName + "_plot",
+    height: 800,
+    width: 1200,
+    scale: 2
+  });
+}
+
+/**
+ * Export current file data as CSV
+ */
+function exportDataAsCsv() {
+  if (applicationState.currentFileIndex < 0) return;
+  
+  const currentFile = getCurrentFileData();
+  
+  // Create CSV content
+  let csvContent = "Time_us,Voltage_V,Current_A\n";
+  for (let i = 0; i < currentFile.timeValues.length; i++) {
+    const timeInMicroseconds = currentFile.timeValues[i] * 1e6;
+    csvContent += `${timeInMicroseconds},${currentFile.voltageValues[i]},${currentFile.currentValues[i]}\n`;
+  }
+  
+  // Download CSV file
+  const blob = new Blob([csvContent], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const downloadLink = document.createElement('a');
+  downloadLink.href = url;
+  downloadLink.download = currentFile.fileName.replace(/\.[^.]+$/, "") + "_exported.csv";
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  downloadLink.remove();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Export highlighted pulse region data as CSV with both original and time-shifted values
+ */
+function exportPulseDataAsCsv() {
+  if (applicationState.currentFileIndex < 0) return;
+  
+  const currentFile = getCurrentFileData();
+  
+  // Find pulse boundaries to determine the highlighted region
+  const currentMinMax = findCurrentMinMax(currentFile.currentValues);
+  const pulseStart = findPulseStart(currentFile.currentValues, currentFile.timeValues, currentMinMax.minIndex);
+  const pulseEnd = findPulseEnd(currentFile.currentValues, currentMinMax.maxIndex);
+  
+  if (pulseStart.pulseStartIndex < 0 || pulseEnd.pulseEndIndex < 0) {
+    alert('No pulse region detected. Cannot export pulse data.');
+    return;
+  }
+  
+  // Calculate pulse region indices (with extension if enabled)
+  let pulseStartIdx = pulseStart.pulseStartIndex;
+  let pulseEndIdx = pulseEnd.pulseEndIndex;
+  
+  // Apply extended pulse highlighting if enabled (to match the highlighted region exactly)
+  if (applicationState.extendedPulseHighlight) {
+    // Calculate sampling rate to determine points per microsecond
+    const totalTimeSpan = currentFile.timeValues[currentFile.timeValues.length - 1] - currentFile.timeValues[0]; // in seconds
+    const totalPoints = currentFile.timeValues.length;
+    const timePerPoint = totalTimeSpan / (totalPoints - 1); // seconds per point
+    const pointsPer200Microseconds = Math.round(200e-6 / timePerPoint); // points for 200 microseconds
+    
+    // Extend by calculated number of points for 200 microseconds
+    pulseStartIdx = Math.max(0, pulseStartIdx - pointsPer200Microseconds);
+    pulseEndIdx = Math.min(currentFile.voltageValues.length - 1, pulseEndIdx + pointsPer200Microseconds);
+  }
+  
+  // Calculate time offset for time-shifted values (relative to pulse start)
+  const timeOffsetSeconds = currentFile.timeValues[pulseStart.pulseStartIndex];
+  
+  // Create CSV content with headers (removed In_Pulse_Region column)
+  let csvContent = "Index,Time_Original_us,Time_Shifted_us,Voltage_V,Current_A\n";
+  
+  // Export only points within the pulse region
+  for (let i = pulseStartIdx; i <= pulseEndIdx; i++) {
+    const timeOriginalMicroseconds = currentFile.timeValues[i] * 1e6;
+    const timeShiftedMicroseconds = (currentFile.timeValues[i] - timeOffsetSeconds) * 1e6;
+    
+    csvContent += `${i},${timeOriginalMicroseconds.toFixed(3)},${timeShiftedMicroseconds.toFixed(3)},${currentFile.voltageValues[i]},${currentFile.currentValues[i]}\n`;
+  }
+  
+  // Download CSV file
+  const blob = new Blob([csvContent], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const downloadLink = document.createElement('a');
+  downloadLink.href = url;
+  downloadLink.download = currentFile.fileName.replace(/\.[^.]+$/, "") + "_pulse_export.csv";
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  downloadLink.remove();
+  URL.revokeObjectURL(url);
+  
+  // Show success notification
+  const pulsePointCount = pulseEndIdx - pulseStartIdx + 1;
+  showNotification(`Exported ${pulsePointCount} pulse region points with time-shifted values`);
+}
+
+/**
+ * Export pulse data for all loaded CSV files
+ */
+function exportAllPulseDataAsCsv() {
+  if (applicationState.loadedFiles.length === 0) {
+    alert('No CSV files loaded. Please load some files first.');
+    return;
+  }
+  
+  let successCount = 0;
+  let failureCount = 0;
+  const failedFiles = [];
+  
+  // Process each loaded file
+  applicationState.loadedFiles.forEach((fileData, index) => {
+    try {
+      // Find pulse boundaries for this file
+      const currentMinMax = findCurrentMinMax(fileData.currentValues);
+      const pulseStart = findPulseStart(fileData.currentValues, fileData.timeValues, currentMinMax.minIndex);
+      const pulseEnd = findPulseEnd(fileData.currentValues, currentMinMax.maxIndex);
+      
+      if (pulseStart.pulseStartIndex < 0 || pulseEnd.pulseEndIndex < 0) {
+        failureCount++;
+        failedFiles.push(`${fileData.fileName} (no pulse detected)`);
+        return;
+      }
+      
+      // Calculate pulse region indices (with extension if enabled)
+      let pulseStartIdx = pulseStart.pulseStartIndex;
+      let pulseEndIdx = pulseEnd.pulseEndIndex;
+      
+      // Apply extended pulse highlighting if enabled
+      if (applicationState.extendedPulseHighlight) {
+        const totalTimeSpan = fileData.timeValues[fileData.timeValues.length - 1] - fileData.timeValues[0];
+        const totalPoints = fileData.timeValues.length;
+        const timePerPoint = totalTimeSpan / (totalPoints - 1);
+        const pointsPer200Microseconds = Math.round(200e-6 / timePerPoint);
+        
+        pulseStartIdx = Math.max(0, pulseStartIdx - pointsPer200Microseconds);
+        pulseEndIdx = Math.min(fileData.voltageValues.length - 1, pulseEndIdx + pointsPer200Microseconds);
+      }
+      
+      // Calculate time offset for time-shifted values
+      const timeOffsetSeconds = fileData.timeValues[pulseStart.pulseStartIndex];
+      
+      // Create CSV content
+      let csvContent = "Index,Time_Original_us,Time_Shifted_us,Voltage_V,Current_A\n";
+      
+      for (let i = pulseStartIdx; i <= pulseEndIdx; i++) {
+        const timeOriginalMicroseconds = fileData.timeValues[i] * 1e6;
+        const timeShiftedMicroseconds = (fileData.timeValues[i] - timeOffsetSeconds) * 1e6;
+        
+        csvContent += `${i},${timeOriginalMicroseconds.toFixed(3)},${timeShiftedMicroseconds.toFixed(3)},${fileData.voltageValues[i]},${fileData.currentValues[i]}\n`;
+      }
+      
+      // Download CSV file
+      const blob = new Blob([csvContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = url;
+      downloadLink.download = fileData.fileName.replace(/\.[^.]+$/, "") + "_pulse_export.csv";
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      URL.revokeObjectURL(url);
+      
+      successCount++;
+      
+    } catch (error) {
+      console.error(`Error exporting pulse data for ${fileData.fileName}:`, error);
+      failureCount++;
+      failedFiles.push(`${fileData.fileName} (error: ${error.message})`);
+    }
+  });
+  
+  // Show summary notification
+  let message = `Export completed: ${successCount} files exported successfully`;
+  if (failureCount > 0) {
+    message += `, ${failureCount} files failed`;
+    console.log('Failed files:', failedFiles);
+  }
+  showNotification(message);
+  
+  if (failureCount > 0) {
+    setTimeout(() => {
+      alert(`Some files failed to export:\n${failedFiles.join('\n')}`);
+    }, 1000);
+  }
+}
+
+/**
+ * Export all data for all loaded CSV files
+ */
+function exportAllDataAsCsv() {
+  if (applicationState.loadedFiles.length === 0) {
+    alert('No CSV files loaded. Please load some files first.');
+    return;
+  }
+  
+  let successCount = 0;
+  let failureCount = 0;
+  const failedFiles = [];
+  
+  // Process each loaded file
+  applicationState.loadedFiles.forEach((fileData, index) => {
+    try {
+      // Create CSV content
+      let csvContent = "Time_us,Voltage_V,Current_A\n";
+      for (let i = 0; i < fileData.timeValues.length; i++) {
+        const timeInMicroseconds = fileData.timeValues[i] * 1e6;
+        csvContent += `${timeInMicroseconds},${fileData.voltageValues[i]},${fileData.currentValues[i]}\n`;
+      }
+      
+      // Download CSV file
+      const blob = new Blob([csvContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = url;
+      downloadLink.download = fileData.fileName.replace(/\.[^.]+$/, "") + "_exported.csv";
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      URL.revokeObjectURL(url);
+      
+      successCount++;
+      
+    } catch (error) {
+      console.error(`Error exporting data for ${fileData.fileName}:`, error);
+      failureCount++;
+      failedFiles.push(`${fileData.fileName} (error: ${error.message})`);
+    }
+  });
+  
+  // Show summary notification
+  let message = `Export completed: ${successCount} files exported successfully`;
+  if (failureCount > 0) {
+    message += `, ${failureCount} files failed`;
+    console.log('Failed files:', failedFiles);
+  }
+  showNotification(message);
+  
+  if (failureCount > 0) {
+    setTimeout(() => {
+      alert(`Some files failed to export:\n${failedFiles.join('\n')}`);
+    }, 1000);
+  }
+}
+
+/**
+ * Export voltage picker PNG for current file
+ * This creates a plot showing only the voltage pulse regions (voltage picker view)
+ */
+function exportVoltagePickerPng() {
+  if (applicationState.currentFileIndex < 0) return;
+  
+  const currentFile = getCurrentFileData();
+  const baseFileName = currentFile.fileName.replace(/\.[^.]+$/, "");
+  
+  // Store current view state
+  const originalIsAnalysisView = applicationState.isAnalysisView;
+  
+  // Temporarily switch to analysis view to get voltage picker visualization
+  applicationState.isAnalysisView = true;
+  
+  // Create voltage picker plot traces (only highlighted pulse regions)
+  const voltagePickerTraces = createPlotTraces(currentFile);
+  const plotTitle = `${currentFile.fileName} - Voltage Picker View`;
+  const plotLayout = createPlotLayout(plotTitle, currentFile);
+  
+  // Create a temporary plot for export
+  const tempPlotDiv = document.createElement('div');
+  tempPlotDiv.id = 'tempVoltagePickerPlot';
+  tempPlotDiv.style.width = '1200px';
+  tempPlotDiv.style.height = '800px';
+  tempPlotDiv.style.position = 'absolute';
+  tempPlotDiv.style.left = '-9999px'; // Hide off-screen
+  document.body.appendChild(tempPlotDiv);
+  
+  // Create the temporary plot
+  Plotly.newPlot('tempVoltagePickerPlot', voltagePickerTraces, plotLayout, {
+    responsive: false,
+    scrollZoom: false
+  }).then(() => {
+    // Export the temporary plot
+    Plotly.toImage('tempVoltagePickerPlot', {
+      format: 'png',
+      height: 800,
+      width: 1200,
+      scale: 2
+    }).then((dataUrl) => {
+      // Create download link
+      const link = document.createElement('a');
+      link.download = baseFileName + "_voltage_picker.png";
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up temporary plot
+      document.body.removeChild(tempPlotDiv);
+      
+      // Restore original view state
+      applicationState.isAnalysisView = originalIsAnalysisView;
+      
+      showNotification('Voltage picker PNG exported successfully');
+    }).catch((error) => {
+      console.error('Error exporting voltage picker PNG:', error);
+      alert('Failed to export voltage picker PNG: ' + error.message);
+      
+      // Clean up temporary plot
+      document.body.removeChild(tempPlotDiv);
+      
+      // Restore original view state
+      applicationState.isAnalysisView = originalIsAnalysisView;
+    });
+  }).catch((error) => {
+    console.error('Error creating temporary plot:', error);
+    alert('Failed to create voltage picker plot: ' + error.message);
+    
+    // Clean up temporary plot
+    document.body.removeChild(tempPlotDiv);
+    
+    // Restore original view state
+    applicationState.isAnalysisView = originalIsAnalysisView;
+  });
+}
+
+/**
+ * Export voltage picker selected points as CSV
+ */
+function exportVoltagePickerPointsAsCsv() {
+  if (applicationState.currentFileIndex < 0) {
+    alert('No file selected. Please select a file first.');
+    return;
+  }
+  
+  // Check if we have any selected points
+  const pointNames = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'];
+  const selectedPoints = pointNames.filter(name => manualVoltagePoints[name] !== null);
+  
+  if (selectedPoints.length === 0) {
+    alert('No voltage points selected. Please select some points first using the voltage picker.');
+    return;
+  }
+  
+  const currentFile = getCurrentFileData();
+  if (!currentFile) {
+    alert('No current file data available.');
+    return;
+  }
+  
+  // Create CSV content with headers
+  let csvContent = "Point_Name,Row_Number,Time_us,Voltage_V,Current_A\n";
+  
+  // Add each selected point to the CSV
+  selectedPoints.forEach(pointName => {
+    const voltagePoint = manualVoltagePoints[pointName];
+    const currentPointName = pointName.replace('v', 'i'); // v1 -> i1, v2 -> i2, etc.
+    const currentPoint = manualCurrentPoints[currentPointName];
+    
+    if (voltagePoint && currentPoint) {
+      // Calculate original row number (add 2 to account for CSV header and 1-based indexing)
+      const rowNumber = voltagePoint.index + 2;
+      
+      // Convert time to microseconds for display
+      const timeInMicroseconds = voltagePoint.time * 1e6;
+      
+      // Add row to CSV
+      csvContent += `${pointName.toUpperCase()},${rowNumber},${timeInMicroseconds.toFixed(3)},${voltagePoint.voltage},${currentPoint.current}\n`;
+    }
+  });
+  
+  // Download CSV file
+  const blob = new Blob([csvContent], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const downloadLink = document.createElement('a');
+  downloadLink.href = url;
+  downloadLink.download = currentFile.fileName.replace(/\.[^.]+$/, "") + "_voltage_picker_points.csv";
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  downloadLink.remove();
+  URL.revokeObjectURL(url);
+  
+  // Show success notification
+  showNotification(`Exported ${selectedPoints.length} voltage picker points to CSV`);
+}
+
+/**
+ * Export voltage picker PNG for all loaded CSV files
+ */
+function exportAllVoltagePickerPng() {
+  if (applicationState.loadedFiles.length === 0) {
+    alert('No CSV files loaded. Please load some files first.');
+    return;
+  }
+  
+  let successCount = 0;
+  let failureCount = 0;
+  const failedFiles = [];
+  let currentExportIndex = 0;
+  
+  // Store the original file index and view state to restore later
+  const originalFileIndex = applicationState.currentFileIndex;
+  const originalIsAnalysisView = applicationState.isAnalysisView;
+  
+  // Function to export voltage picker PNG for a single file
+  function exportSingleVoltagePickerPng(fileIndex) {
+    try {
+      const fileData = applicationState.loadedFiles[fileIndex];
+      console.log(`Exporting voltage picker PNG for file ${fileIndex + 1}/${applicationState.loadedFiles.length}: ${fileData.fileName}`);
+      
+      // Switch to this file temporarily
+      applicationState.currentFileIndex = fileIndex;
+      applicationState.isAnalysisView = true; // Force analysis view for voltage picker
+      
+      // Create voltage picker plot traces
+      const voltagePickerTraces = createPlotTraces(fileData);
+      const plotTitle = `${fileData.fileName} - Voltage Picker View`;
+      const plotLayout = createPlotLayout(plotTitle, fileData);
+      
+      // Create a temporary plot for export
+      const tempPlotDiv = document.createElement('div');
+      tempPlotDiv.id = `tempVoltagePickerPlot_${fileIndex}`;
+      tempPlotDiv.style.width = '1200px';
+      tempPlotDiv.style.height = '800px';
+      tempPlotDiv.style.position = 'absolute';
+      tempPlotDiv.style.left = '-9999px'; // Hide off-screen
+      document.body.appendChild(tempPlotDiv);
+      
+      // Create the temporary plot
+      Plotly.newPlot(tempPlotDiv.id, voltagePickerTraces, plotLayout, {
+        responsive: false,
+        scrollZoom: false
+      }).then(() => {
+        // Export the temporary plot
+        Plotly.toImage(tempPlotDiv.id, {
+          format: 'png',
+          height: 800,
+          width: 1200,
+          scale: 2
+        }).then((dataUrl) => {
+          // Create download link
+          const baseFileName = fileData.fileName.replace(/\.[^.]+$/, "");
+          const link = document.createElement('a');
+          link.download = baseFileName + "_voltage_picker.png";
+          link.href = dataUrl;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // Clean up temporary plot
+          document.body.removeChild(tempPlotDiv);
+          
+          successCount++;
+          console.log(`Successfully exported voltage picker PNG for ${fileData.fileName}`);
+          
+          // Move to next file
+          currentExportIndex++;
+          if (currentExportIndex < applicationState.loadedFiles.length) {
+            // Export next file after a short delay
+            setTimeout(() => exportSingleVoltagePickerPng(currentExportIndex), 800);
+          } else {
+            // All files processed, show summary and restore original state
+            finishVoltagePickerExport();
+          }
+        }).catch((error) => {
+          console.error(`Error exporting voltage picker PNG for ${fileData.fileName}:`, error);
+          failureCount++;
+          failedFiles.push(`${fileData.fileName} (PNG export error: ${error.message})`);
+          
+          // Clean up temporary plot
+          document.body.removeChild(tempPlotDiv);
+          
+          // Move to next file
+          currentExportIndex++;
+          if (currentExportIndex < applicationState.loadedFiles.length) {
+            setTimeout(() => exportSingleVoltagePickerPng(currentExportIndex), 800);
+          } else {
+            finishVoltagePickerExport();
+          }
+        });
+      }).catch((error) => {
+        console.error(`Error creating temporary plot for ${fileData.fileName}:`, error);
+        failureCount++;
+        failedFiles.push(`${fileData.fileName} (plot creation error: ${error.message})`);
+        
+        // Clean up temporary plot
+        document.body.removeChild(tempPlotDiv);
+        
+        // Move to next file
+        currentExportIndex++;
+        if (currentExportIndex < applicationState.loadedFiles.length) {
+          setTimeout(() => exportSingleVoltagePickerPng(currentExportIndex), 800);
+        } else {
+          finishVoltagePickerExport();
+        }
+      });
+      
+    } catch (error) {
+      console.error(`Error processing file ${fileIndex}:`, error);
+      failureCount++;
+      failedFiles.push(`${applicationState.loadedFiles[fileIndex].fileName} (processing error: ${error.message})`);
+      
+      // Move to next file
+      currentExportIndex++;
+      if (currentExportIndex < applicationState.loadedFiles.length) {
+        setTimeout(() => exportSingleVoltagePickerPng(currentExportIndex), 800);
+      } else {
+        finishVoltagePickerExport();
+      }
+    }
+  }
+  
+  // Function to finish the voltage picker export process
+  function finishVoltagePickerExport() {
+    // Restore original file index and view state
+    applicationState.currentFileIndex = originalFileIndex;
+    applicationState.isAnalysisView = originalIsAnalysisView;
+    
+    if (originalFileIndex >= 0) {
+      renderCurrentFilePlot();
+      updateFileStatusDisplay();
+    }
+    
+    // Show summary notification
+    let message = `Voltage picker PNG export completed: ${successCount} files exported successfully`;
+    if (failureCount > 0) {
+      message += `, ${failureCount} files failed`;
+      console.log('Failed files:', failedFiles);
+    }
+    showNotification(message);
+    
+    if (failureCount > 0) {
+      setTimeout(() => {
+        alert(`Some voltage picker PNG exports failed:\n${failedFiles.join('\n')}`);
+      }, 1000);
+    }
+  }
+  
+  // Start the export process
+  showNotification(`Starting voltage picker PNG export for ${applicationState.loadedFiles.length} files...`);
+  exportSingleVoltagePickerPng(0);
+}
+
+/**
+ * Export PNG plots for all loaded CSV files
+ */
+function exportAllPng() {
+  if (applicationState.loadedFiles.length === 0) {
+    alert('No CSV files loaded. Please load some files first.');
+    return;
+  }
+  
+  let successCount = 0;
+  let failureCount = 0;
+  const failedFiles = [];
+  let currentExportIndex = 0;
+  
+  // Store the original file index to restore later
+  const originalFileIndex = applicationState.currentFileIndex;
+  
+  // Function to export PNG for a single file
+  function exportSingleFilePng(fileIndex) {
+    try {
+      const fileData = applicationState.loadedFiles[fileIndex];
+      console.log(`Exporting PNG for file ${fileIndex + 1}/${applicationState.loadedFiles.length}: ${fileData.fileName}`);
+      
+      // Switch to this file temporarily
+      applicationState.currentFileIndex = fileIndex;
+      
+      // Update file status display
+      updateFileStatusDisplay();
+      
+      // Render the plot for this file
+      renderCurrentFilePlot();
+      
+      // Wait for plot to render, then export
+      setTimeout(() => {
+        try {
+          const baseFileName = fileData.fileName.replace(/\.[^.]+$/, "");
+          
+          // Check if plot area exists and has data
+          const plotElement = document.getElementById('plotArea');
+          if (!plotElement || !plotElement.data || plotElement.data.length === 0) {
+            throw new Error('Plot not properly rendered');
+          }
+          
+          // Use Plotly.toImage instead of downloadImage for better control
+          Plotly.toImage('plotArea', {
+            format: 'png',
+            height: 800,
+            width: 1200,
+            scale: 2
+          }).then((dataUrl) => {
+            // Create download link
+            const link = document.createElement('a');
+            link.download = baseFileName + "_plot.png";
+            link.href = dataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            successCount++;
+            console.log(`Successfully exported PNG for ${fileData.fileName}`);
+            
+            // Move to next file
+            currentExportIndex++;
+            if (currentExportIndex < applicationState.loadedFiles.length) {
+              // Export next file after a short delay
+              setTimeout(() => exportSingleFilePng(currentExportIndex), 800);
+            } else {
+              // All files processed, show summary and restore original file
+              finishExport();
+            }
+          }).catch((error) => {
+            console.error(`Error exporting PNG for ${fileData.fileName}:`, error);
+            failureCount++;
+            failedFiles.push(`${fileData.fileName} (PNG export error: ${error.message})`);
+            
+            // Move to next file
+            currentExportIndex++;
+            if (currentExportIndex < applicationState.loadedFiles.length) {
+              setTimeout(() => exportSingleFilePng(currentExportIndex), 800);
+            } else {
+              finishExport();
+            }
+          });
+          
+        } catch (error) {
+          console.error(`Error preparing PNG export for ${fileData.fileName}:`, error);
+          failureCount++;
+          failedFiles.push(`${fileData.fileName} (preparation error: ${error.message})`);
+          
+          // Move to next file
+          currentExportIndex++;
+          if (currentExportIndex < applicationState.loadedFiles.length) {
+            setTimeout(() => exportSingleFilePng(currentExportIndex), 800);
+          } else {
+            finishExport();
+          }
+        }
+      }, 1500); // Increased wait time for plot to fully render
+      
+    } catch (error) {
+      console.error(`Error processing file ${fileIndex}:`, error);
+      failureCount++;
+      failedFiles.push(`${applicationState.loadedFiles[fileIndex].fileName} (processing error: ${error.message})`);
+      
+      // Move to next file
+      currentExportIndex++;
+      if (currentExportIndex < applicationState.loadedFiles.length) {
+        setTimeout(() => exportSingleFilePng(currentExportIndex), 800);
+      } else {
+        finishExport();
+      }
+    }
+  }
+  
+  // Function to finish the export process
+  function finishExport() {
+    // Restore original file index and re-render
+    applicationState.currentFileIndex = originalFileIndex;
+    if (originalFileIndex >= 0) {
+      renderCurrentFilePlot();
+      updateFileStatusDisplay();
+    }
+    
+    // Show summary notification
+    let message = `PNG export completed: ${successCount} files exported successfully`;
+    if (failureCount > 0) {
+      message += `, ${failureCount} files failed`;
+      console.log('Failed files:', failedFiles);
+    }
+    showNotification(message);
+    
+    if (failureCount > 0) {
+      setTimeout(() => {
+        alert(`Some PNG exports failed:\n${failedFiles.join('\n')}`);
+      }, 1000);
+    }
+  }
+  
+  // Start the export process
+  showNotification(`Starting PNG export for ${applicationState.loadedFiles.length} files...`);
+  exportSingleFilePng(0);
+}
+
+// Event Listeners
+
+// File input change handler
+document.getElementById('csvFileInput').addEventListener('change', async (event) => {
+  const selectedFiles = Array.from(event.target.files);
+  if (selectedFiles.length === 0) return;
+  
+  // Reset application state
+  applicationState.loadedFiles = [];
+  applicationState.currentFileIndex = -1;
+  applicationState.isPlotRendered = false;
+  renderLoadedFilesList();
+  
+  // Process each selected file
+  for (const file of selectedFiles) {
+    try {
+      const processedFileData = await processUploadedFile(file);
+      applicationState.loadedFiles.push(processedFileData);
+    } catch (error) {
+      console.error(`Failed to process file ${file.name}:`, error);
+      alert(`Failed to process file ${file.name}: ${error.message}`);
+    }
+  }
+  
+  // If files were successfully loaded, display the first one
+  if (applicationState.loadedFiles.length > 0) {
+    applicationState.currentFileIndex = 0;
+    renderCurrentFilePlot();
+    renderLoadedFilesList();
+  }
+});
+
+// Navigation button handlers
+document.getElementById('previousFileButton').onclick = navigateToPreviousFile;
+document.getElementById('nextFileButton').onclick = navigateToNextFile;
+
+// Export button handlers for the export view
+document.getElementById('exportPulseCsvButtonLarge').onclick = exportPulseDataAsCsv;
+document.getElementById('exportPngButtonLarge').onclick = exportPlotAsPng;
+document.getElementById('exportVoltagePickerPngButtonLarge').onclick = exportVoltagePickerPng;
+document.getElementById('exportAllVoltagePickerPngButton').onclick = exportAllVoltagePickerPng;
+document.getElementById('exportCsvButtonLarge').onclick = exportDataAsCsv;
+
+// Export All button handlers
+document.getElementById('exportAllPulseCsvButton').onclick = exportAllPulseDataAsCsv;
+document.getElementById('exportAllDataCsvButton').onclick = exportAllDataAsCsv;
+document.getElementById('exportAllPngButton').onclick = exportAllPng;
+
+// Toggle markers button handler
+document.getElementById('toggleMarkersButton').onclick = () => {
+  applicationState.showDetectionMarkers = !applicationState.showDetectionMarkers;
+  updateToggleMarkersButton();
+  if (applicationState.currentFileIndex >= 0) {
+    renderCurrentFilePlot();
+  }
+};
+
+// Extended pulse button handler
+document.getElementById('extendedPulseButton').onclick = () => {
+  applicationState.extendedPulseHighlight = !applicationState.extendedPulseHighlight;
+  updateExtendedPulseButton();
+  if (applicationState.currentFileIndex >= 0) {
+    renderCurrentFilePlot();
+  }
+};
+
+// Fill pulse area button handler
+document.getElementById('fillPulseAreaButton').onclick = () => {
+  applicationState.fillPulseArea = !applicationState.fillPulseArea;
+  updateFillPulseAreaButton();
+  if (applicationState.currentFileIndex >= 0) {
+    renderCurrentFilePlot();
+  }
+};
+
+// Show pulse points button handler
+document.getElementById('showPulsePointsButton').onclick = () => {
+  applicationState.showPulsePoints = !applicationState.showPulsePoints;
+  updateShowPulsePointsButton();
+  if (applicationState.currentFileIndex >= 0) {
+    renderCurrentFilePlot();
+  }
+};
+
+// Zoom to pulse button handler
+document.getElementById('zoomToPulseButton').onclick = () => {
+  applicationState.zoomToPulse = !applicationState.zoomToPulse;
+  updateZoomToPulseButton();
+  if (applicationState.currentFileIndex >= 0) {
+    renderCurrentFilePlot();
+  }
+};
+
+// Tab switching handlers
+document.getElementById('rawTab').onclick = () => {
+  if (!applicationState.isRawView) {
+    applicationState.isRawView = true;
+    applicationState.isPulseView = false;
+    applicationState.isTimeShifted = false;
+    applicationState.isAnalysisView = false;
+    applicationState.isExportView = false;
+    updateTabStates();
+    if (applicationState.currentFileIndex >= 0) {
+      renderCurrentFilePlot();
+    }
+  }
+};
+
+document.getElementById('pulseTab').onclick = () => {
+  if (!applicationState.isPulseView) {
+    applicationState.isRawView = false;
+    applicationState.isPulseView = true;
+    applicationState.isTimeShifted = false;
+    applicationState.isAnalysisView = false;
+    applicationState.isExportView = false;
+    updateTabStates();
+    if (applicationState.currentFileIndex >= 0) {
+      renderCurrentFilePlot();
+    }
+  }
+};
+
+document.getElementById('shiftedTab').onclick = () => {
+  if (!applicationState.isTimeShifted || applicationState.isAnalysisView || applicationState.isExportView) {
+    applicationState.isRawView = false;
+    applicationState.isPulseView = false;
+    applicationState.isTimeShifted = true;
+    applicationState.isAnalysisView = false;
+    applicationState.isExportView = false;
+    updateTabStates();
+    if (applicationState.currentFileIndex >= 0) {
+      renderCurrentFilePlot();
+    }
+  }
+};
+
+document.getElementById('analysisTab').onclick = () => {
+  if (!applicationState.isAnalysisView) {
+    applicationState.isRawView = false;
+    applicationState.isPulseView = false;
+    applicationState.isTimeShifted = true; // Analysis mode uses time-shifted view
+    applicationState.isAnalysisView = true;
+    applicationState.isExportView = false;
+    updateTabStates();
+    if (applicationState.currentFileIndex >= 0) {
+      renderCurrentFilePlot();
+    }
+  }
+};
+
+document.getElementById('exportTab').onclick = () => {
+  if (!applicationState.isExportView) {
+    applicationState.isRawView = false;
+    applicationState.isPulseView = false;
+    applicationState.isTimeShifted = false;
+    applicationState.isAnalysisView = false;
+    applicationState.isExportView = true;
+    updateTabStates();
+    if (applicationState.currentFileIndex >= 0) {
+      renderCurrentFilePlot();
+    }
+  }
+};
+
+/**
+ * Update the visual state of tab buttons
+ */
+function updateTabStates() {
+  const rawTab = document.getElementById('rawTab');
+  const pulseTab = document.getElementById('pulseTab');
+  const shiftedTab = document.getElementById('shiftedTab');
+  const analysisTab = document.getElementById('analysisTab');
+  const exportTab = document.getElementById('exportTab');
+  
+  // Remove active class from all tabs
+  rawTab.classList.remove('active');
+  pulseTab.classList.remove('active');
+  shiftedTab.classList.remove('active');
+  analysisTab.classList.remove('active');
+  exportTab.classList.remove('active');
+  
+  // Add active class to current tab
+  if (applicationState.isAnalysisView) {
+    analysisTab.classList.add('active');
+  } else if (applicationState.isTimeShifted) {
+    shiftedTab.classList.add('active');
+  } else if (applicationState.isPulseView) {
+    pulseTab.classList.add('active');
+  } else if (applicationState.isExportView) {
+    exportTab.classList.add('active');
+  } else {
+    rawTab.classList.add('active');
+  }
+  
+  // Show/hide export view based on tab selection
+  const plotArea = document.getElementById('plotArea');
+  const exportView = document.getElementById('exportView');
+  
+  if (applicationState.isExportView) {
+    plotArea.style.display = 'none';
+    exportView.style.display = 'block';
+  } else {
+    plotArea.style.display = 'block';
+    exportView.style.display = 'none';
+  }
+}
+
+/**
+ * Update the toggle markers button text based on current state
+ */
+function updateToggleMarkersButton() {
+  const toggleButton = document.getElementById('toggleMarkersButton');
+  if (applicationState.showDetectionMarkers) {
+    toggleButton.textContent = '🎯 Hide Markers';
+  } else {
+    toggleButton.textContent = '🎯 Show Markers';
+  }
+}
+
+/**
+ * Update the extended pulse button text based on current state
+ */
+function updateExtendedPulseButton() {
+  const extendedButton = document.getElementById('extendedPulseButton');
+  if (applicationState.extendedPulseHighlight) {
+    extendedButton.textContent = '📏 Hide Extended Pulse';
+  } else {
+    extendedButton.textContent = '📏 Show Extended Pulse';
+  }
+}
+
+/**
+ * Update the fill pulse area button text based on current state
+ */
+function updateFillPulseAreaButton() {
+  const fillButton = document.getElementById('fillPulseAreaButton');
+  if (applicationState.fillPulseArea) {
+    fillButton.textContent = '🎨 Hide Area Fill';
+  } else {
+    fillButton.textContent = '🎨 Show Area Fill';
+  }
+}
+
+/**
+ * Update the show pulse points button text based on current state
+ */
+function updateShowPulsePointsButton() {
+  const pulsePointsButton = document.getElementById('showPulsePointsButton');
+  if (applicationState.showPulsePoints) {
+    pulsePointsButton.textContent = '📍 Hide Pulse Points';
+  } else {
+    pulsePointsButton.textContent = '📍 Show Pulse Points';
+  }
+}
+
+/**
+ * Update the zoom to pulse button text based on current state
+ */
+function updateZoomToPulseButton() {
+  const zoomButton = document.getElementById('zoomToPulseButton');
+  if (applicationState.zoomToPulse) {
+    zoomButton.textContent = '🔍 Zoom Out';
+  } else {
+    zoomButton.textContent = '🔍 Zoom to Pulse';
+  }
+}
+
+/**
+ * Auto-calculate analysis if GV value is available and in analysis view
+ */
+function autoCalculateAnalysisIfAvailable() {
+  // Only auto-calculate if we're in analysis view and have a gap value
+  if (!applicationState.isAnalysisView || !applicationState.gapValue) {
+    return;
+  }
+  
+  const currentFile = getCurrentFileData();
+  if (!currentFile) {
+    return;
+  }
+  
+  // Calculate the voltage points using the stored gap value
+  const analysisPoints = calculateVoltageAnalysisPoints(currentFile, applicationState.gapValue);
+  
+  if (analysisPoints.error) {
+    // Clear previous results if calculation fails
+    applicationState.analysisPoints = null;
+    const resultsDiv = document.getElementById('analysisResults');
+    resultsDiv.style.display = 'none';
+    return;
+  }
+  
+  // Store analysis points in application state
+  applicationState.analysisPoints = analysisPoints;
+  
+  // Display results
+  displayAnalysisResults(analysisPoints, applicationState.gapValue);
+  
+  // Re-render plot to show analysis points
+  if (applicationState.currentFileIndex >= 0) {
+    renderCurrentFilePlot();
+  }
+}
+
+/**
+ * Display analysis results in the right sidebar
+ * @param {Object} analysisPoints - The calculated analysis points
+ * @param {number} gapValue - The gap value used for calculations
+ */
+function displayAnalysisResults(analysisPoints, gapValue) {
+  const resultsDiv = document.getElementById('analysisResults');
+  const pointsDisplay = document.getElementById('pointsDisplay');
+  
+  let displayHtml = `<div style="margin-bottom:12px; padding:8px; background:#22252b; border-radius:8px;">
+    <strong>Gap Value (GV):</strong> ${gapValue} µs
+  </div>`;
+  
+  // Display each point
+  const points = ['v1', 'v2', 'v3', 'v4', 'v5'];
+  points.forEach((pointName, index) => {
+    const point = analysisPoints[pointName];
+    if (point) {
+      const timeInMicroseconds = point.time * 1e6;
+      displayHtml += `
+        <div style="margin-bottom:8px; padding:8px; background:#22252b; border-radius:6px;">
+          <div style="font-weight:600; color:var(--amber);">${pointName.toUpperCase()}</div>
+          <div style="font-size:11px; margin:2px 0;">${point.description}</div>
+          <div style="font-size:11px;">Time: ${timeInMicroseconds.toFixed(2)} µs</div>
+          <div style="font-size:11px;">Voltage: ${point.voltage.toFixed(4)} V</div>
+          <div style="font-size:11px;">Index: ${point.index}</div>
+        </div>
+      `;
+    }
+  });
+  
+  pointsDisplay.innerHTML = displayHtml;
+  resultsDiv.style.display = 'block';
+}
+
+// Calculate points button handler - REMOVED (no longer needed for manual selection)
+// The calculatePointsButton element doesn't exist in the HTML anymore
+
+/**
+ * Update the manual points display in the right sidebar
+ */
+function updateManualPointsDisplay() {
+  console.log('Updating manual points display...');
+  console.log('Current manual voltage points:', manualVoltagePoints);
+  
+  const selectedPointsList = document.getElementById('selectedPointsList');
+  const nextPointIndicator = document.getElementById('nextPointIndicator');
+  
+  if (!selectedPointsList || !nextPointIndicator) {
+    console.error('Required UI elements not found');
+    return;
+  }
+  
+  // Count how many points are selected
+  const pointNames = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'];
+  let selectedCount = 0;
+  let displayHtml = '';
+  
+  pointNames.forEach((pointName) => {
+    const point = manualVoltagePoints[pointName];
+    if (point) {
+      selectedCount++;
+      
+      // Display time based on current view mode
+      let displayTime = point.time * 1e6; // Convert to microseconds
+      let timeLabel = "Time";
+      
+      // If we're in time-shifted mode and the stored time is already shifted (negative or small positive values)
+      // then it's already relative to pulse start
+      if (applicationState.isTimeShifted && Math.abs(point.time) < 1) {
+        timeLabel = "Time (shifted)";
+      }
+      
+      // Get corresponding current point
+      const currentPointName = pointName.replace('v', 'i'); // v1 -> i1, v2 -> i2, etc.
+      const currentPoint = manualCurrentPoints[currentPointName];
+      
+      displayHtml += `
+        <div style="margin-bottom:8px; padding:8px; background:#22252b; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-weight:600; color:var(--amber);">${pointName.toUpperCase()} & ${currentPointName.toUpperCase()}</div>
+            <div style="font-size:11px;">${timeLabel}: ${displayTime.toFixed(2)} µs</div>
+            <div style="font-size:11px;">Voltage: ${point.voltage.toFixed(4)} V</div>
+            ${currentPoint ? `<div style="font-size:11px;">Current: ${currentPoint.current.toFixed(4)} A</div>` : ''}
+            <div style="font-size:11px;">Index: ${point.index}</div>
+          </div>
+          <button 
+            onclick="clearManualVoltagePoint('${pointName}')" 
+            style="padding:4px 8px; background:#dc3545; color:#fff; border:none; border-radius:4px; font-size:10px; cursor:pointer;"
+          >
+            Clear
+          </button>
+        </div>
+      `;
+    }
+  });
+  
+  if (selectedCount === 0) {
+    displayHtml = '<div style="color:var(--muted); font-style:italic;">No points selected yet</div>';
+  }
+  
+  console.log(`Selected count: ${selectedCount}, updating display HTML`);
+  selectedPointsList.innerHTML = displayHtml;
+  
+  // Update next point indicator
+  if (selectedCount < 8) {
+    const nextPoint = pointNames[selectedCount];
+    console.log(`Next point to select: ${nextPoint}`);
+    nextPointIndicator.textContent = nextPoint;
+    applicationState.nextPointToSelect = nextPoint;
+  } else {
+    console.log('All points selected');
+    nextPointIndicator.textContent = 'All points selected';
+    applicationState.nextPointToSelect = null;
+  }
+  
+  // Update selection progress indicators
+  updateSelectionProgress();
+}
+
+/**
+ * Update the visual selection progress indicators
+ */
+function updateSelectionProgress() {
+  console.log('Updating selection progress indicators...');
+  const pointNames = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'];
+  
+  pointNames.forEach((pointName) => {
+    const statusElement = document.getElementById(`${pointName}Status`);
+    if (statusElement) {
+      const point = manualVoltagePoints[pointName];
+      if (point) {
+        // Point is selected - make it green
+        console.log(`Setting ${pointName} status to green (selected)`);
+        statusElement.style.background = '#28a745';
+        statusElement.style.color = '#fff';
+      } else {
+        // Point is not selected - make it red
+        console.log(`Setting ${pointName} status to red (not selected)`);
+        statusElement.style.background = '#dc3545';
+        statusElement.style.color = '#fff';
+      }
+    } else {
+      console.error(`Status element for ${pointName} not found`);
+    }
+  });
+}
+
+/**
+ * Clear all manual voltage points
+ */
+function clearAllManualVoltagePoints() {
+  const pointNames = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'];
+  pointNames.forEach(pointName => {
+    manualVoltagePoints[pointName] = null;
+    // Also clear corresponding current points
+    const currentPointName = pointName.replace('v', 'i');
+    manualCurrentPoints[currentPointName] = null;
+  });
+  
+  // Reset selection state
+  applicationState.nextPointToSelect = 'v1';
+  
+  // Update the UI
+  updateManualPointsDisplay();
+  
+  // Re-render plot to remove the points
+  if (applicationState.currentFileIndex >= 0) {
+    renderCurrentFilePlot();
+  }
+}
+
+/**
+ * Toggle selection mode on/off
+ */
+function toggleSelectionMode() {
+  applicationState.selectionModeEnabled = !applicationState.selectionModeEnabled;
+  updateSelectionModeButton();
+  
+  if (applicationState.selectionModeEnabled && applicationState.isAnalysisView) {
+    // Add click event listener to the plot with a delay to ensure plot is ready
+    setTimeout(() => {
+      addPlotClickHandler();
+    }, 500);
+  } else {
+    // Remove click event listener from the plot
+    removePlotClickHandler();
+  }
+}
+
+/**
+ * Update the selection mode button text
+ */
+function updateSelectionModeButton() {
+  const button = document.getElementById('toggleSelectionModeButton');
+  if (applicationState.selectionModeEnabled) {
+    button.textContent = 'Disable Selection Mode';
+    button.style.background = '#dc3545'; // Red when enabled
+  } else {
+    button.textContent = 'Enable Selection Mode';
+    button.style.background = 'var(--blue)'; // Blue when disabled
+  }
+}
+
+/**
+ * Add click event handler to the plot for point selection
+ */
+function addPlotClickHandler() {
+  const plotElement = document.getElementById('plotArea');
+  if (plotElement && applicationState.isPlotRendered) {
+    console.log('Adding click handler to plot element');
+    
+    // Remove any existing listeners first
+    try {
+      if (plotElement.removeAllListeners) {
+        plotElement.removeAllListeners('plotly_click');
+      }
+    } catch (e) {
+      console.log('No existing listeners to remove');
+    }
+    
+    // Add the click event listener using Plotly's event system
+    try {
+      plotElement.on('plotly_click', handlePlotClick);
+      console.log('Click handler successfully added for point selection');
+    } catch (e) {
+      console.error('Failed to add click handler:', e);
+      // Fallback: try using direct event attachment
+      setTimeout(() => {
+        try {
+          plotElement.addEventListener('plotly_click', handlePlotClick);
+          console.log('Click handler added via fallback method');
+        } catch (fallbackError) {
+          console.error('Fallback click handler attachment also failed:', fallbackError);
+        }
+      }, 100);
+    }
+  } else {
+    console.log('Cannot add click handler - plot element not ready or not rendered');
+  }
+}
+
+/**
+ * Remove click event handler from the plot
+ */
+function removePlotClickHandler() {
+  const plotElement = document.getElementById('plotArea');
+  if (plotElement && applicationState.isPlotRendered) {
+    if (plotElement.removeAllListeners) {
+      plotElement.removeAllListeners('plotly_click');
+    }
+    console.log('Click handler removed');
+  }
+}
+
+/**
+ * Handle plot click events for manual point selection
+ * @param {Object} data - Plotly click event data
+ */
+function handlePlotClick(data) {
+  console.log('Plot clicked!', data);
+  
+  // Only handle clicks in analysis mode with selection enabled
+  if (!applicationState.isAnalysisView || !applicationState.selectionModeEnabled) {
+    console.log('Selection not enabled or not in analysis mode');
+    return;
+  }
+  
+  // Check if we have a point to select
+  if (!applicationState.nextPointToSelect) {
+    console.log('All points already selected');
+    return;
+  }
+  
+  // Only handle clicks on the voltage subplot (top subplot)
+  if (data.points && data.points.length > 0) {
+    const point = data.points[0];
+    console.log('Clicked point:', point);
+    console.log('Point xaxis:', point.xaxis);
+    console.log('Point yaxis:', point.yaxis);
+    
+    // Check if this is a click on the voltage subplot
+    // Voltage subplot uses xaxis: 'x' and yaxis: 'y'
+    // Current subplot uses xaxis: 'x2' and yaxis: 'y2'
+    // Note: Plotly returns axis objects, so we need to check the curveNumber or use a different approach
+    
+    // Alternative approach: check the curveNumber and trace properties
+    const traceIndex = point.curveNumber;
+    const traces = document.getElementById('plotArea').data;
+    const clickedTrace = traces[traceIndex];
+    
+    console.log('Clicked trace index:', traceIndex);
+    console.log('Clicked trace:', clickedTrace);
+    console.log('Trace xaxis:', clickedTrace.xaxis);
+    console.log('Trace yaxis:', clickedTrace.yaxis);
+    
+    // Check if the clicked trace belongs to the voltage subplot (xaxis: 'x', yaxis: 'y')
+    // If xaxis/yaxis are undefined, they default to 'x' and 'y' respectively
+    const traceXAxis = clickedTrace.xaxis || 'x';
+    const traceYAxis = clickedTrace.yaxis || 'y';
+    
+    if (traceXAxis !== 'x' || traceYAxis !== 'y') {
+      console.log('Click was not on voltage subplot (trace xaxis:', traceXAxis, ', yaxis:', traceYAxis, '), ignoring');
+      return;
+    }
+    
+    console.log('Click confirmed on voltage subplot');
+    
+    // Get the clicked coordinates
+    const clickedTime = point.x; // Time in microseconds
+    const clickedVoltage = point.y; // Voltage value
+    
+    console.log(`Clicked at time: ${clickedTime} µs, voltage: ${clickedVoltage} V`);
+    
+    // Find the closest data point in the original data
+    const currentFile = getCurrentFileData();
+    if (!currentFile) {
+      console.log('No current file data');
+      return;
+    }
+    
+    // Apply time shifting if enabled to find the correct index
+    let timeValues = currentFile.timeValues.map(t => t * 1e6); // Convert to microseconds
+    if (applicationState.isTimeShifted) {
+      const currentMinMax = findCurrentMinMax(currentFile.currentValues);
+      const pulseStart = findPulseStart(currentFile.currentValues, currentFile.timeValues, currentMinMax.minIndex);
+      if (pulseStart.pulseStartIndex >= 0) {
+        const timeOffset = timeValues[pulseStart.pulseStartIndex];
+        timeValues = timeValues.map(t => t - timeOffset);
+      }
+    }
+    
+    // Find the closest point
+    let closestIndex = 0;
+    let minDistance = Math.abs(timeValues[0] - clickedTime);
+    
+    for (let i = 1; i < timeValues.length; i++) {
+      const distance = Math.abs(timeValues[i] - clickedTime);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestIndex = i;
+      }
+    }
+    
+    console.log(`Closest point found at index ${closestIndex}`);
+    
+    // Store the current point name before setting it
+    const currentPointName = applicationState.nextPointToSelect;
+    
+    // Calculate the time value to store (shifted if in time-shifted mode)
+    let timeToStore = currentFile.timeValues[closestIndex];
+    if (applicationState.isTimeShifted) {
+      const currentMinMax = findCurrentMinMax(currentFile.currentValues);
+      const pulseStart = findPulseStart(currentFile.currentValues, currentFile.timeValues, currentMinMax.minIndex);
+      if (pulseStart.pulseStartIndex >= 0) {
+        // Store the time-shifted value (relative to pulse start)
+        timeToStore = currentFile.timeValues[closestIndex] - currentFile.timeValues[pulseStart.pulseStartIndex];
+      }
+    }
+    
+    // Set the manual voltage point
+    setManualVoltagePoint(
+      currentPointName,
+      closestIndex,
+      timeToStore,
+      currentFile.voltageValues[closestIndex]
+    );
+    
+    console.log(`Set point ${currentPointName} at index ${closestIndex}`);
+    
+    // Provide user feedback
+    const pointName = currentPointName.toUpperCase();
+    const voltage = currentFile.voltageValues[closestIndex].toFixed(4);
+    const time = (currentFile.timeValues[closestIndex] * 1e6).toFixed(2);
+    
+    // Show a temporary notification
+    showNotification(`${pointName} selected: ${voltage}V at ${time}µs`);
+    
+    // Check if all points are now selected (after the point was set)
+    const pointNames = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'];
+    const selectedCount = pointNames.filter(name => manualVoltagePoints[name] !== null).length;
+    
+    if (selectedCount >= 8) {
+      applicationState.selectionModeEnabled = false;
+      updateSelectionModeButton();
+      removePlotClickHandler();
+      showNotification('All 8 points selected! Selection mode disabled.');
+    }
+  }
+}
+
+/**
+ * Show a temporary notification to the user
+ * @param {string} message - Message to display
+ */
+function showNotification(message) {
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--amber);
+    color: #000;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+  `;
+  notification.textContent = message;
+  
+  // Add to page
+  document.body.appendChild(notification);
+  
+  // Remove after 3 seconds
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 300);
+  }, 3000);
+}
+
+/**
+ * Update the analysis points to use manual points instead of automatic calculation
+ */
+function updateAnalysisPointsFromManual() {
+  if (applicationState.isAnalysisView) {
+    // Use manual points for analysis display
+    applicationState.analysisPoints = getManualVoltagePoints();
+  }
+}
+
+// Manual point selection button handlers
+document.getElementById('clearAllPointsButton').onclick = clearAllManualVoltagePoints;
+document.getElementById('toggleSelectionModeButton').onclick = toggleSelectionMode;
+document.getElementById('exportVoltagePickerPointsButton').onclick = exportVoltagePickerPointsAsCsv;
+
+// Initialize the manual points display on page load
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM Content Loaded - initializing manual points display');
+  updateManualPointsDisplay();
+});
+
+// Also initialize when the page loads (backup)
+window.addEventListener('load', () => {
+  console.log('Window loaded - initializing manual points display');
+  updateManualPointsDisplay();
+});
+
+// Window resize handler to keep plots responsive
+window.addEventListener('resize', () => {
+  if (applicationState.isPlotRendered) {
+    Plotly.Plots.resize(document.getElementById('plotArea'));
+  }
+});
+
+</script>
+</body>
+</html>
