@@ -1,4 +1,4 @@
-# 🧩 Developer Notes (v2025-10)
+# 🧩 Developer Notes
 **Author:** Ifra Ilyas Ansari  
 **Created:** 2025-10-15  
 **Updated:** 2025-11-11
