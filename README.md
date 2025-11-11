@@ -102,22 +102,6 @@ If your data is not loading or your plots look wrong, you probably need to edit 
 
 ---
 
-## 📜 Code Versions
-
-* **Stages:**
-    * `VT_Processor_Py_Stage1_PulseDetector`: **v3.6.4**
-    * `VT_Processor_Py_Stage2_VoltageSelector`: **v1.7.0**
-    * `VT_Processor_Py_BatchPlotter`: **v1.2.3**
-* **Modules:**
-    * `VT_Module_Py_GlobalSettings`: v1.1.0
-    * `VT_Module_Py_System`: v1.0.2
-    * `VT_Module_Py_DataIO`: v1.2.0
-    * `VT_Module_Py_Processing`: v1.0.0
-    * `VT_Module_Py_PlotHelpers`: v1.0.1
-    * `VT_Module_Py_UserInput`: v1.0.1
-
----
-
 ## 📊 Key Output Files
 
 The entire pipeline is designed to generate one primary file:
@@ -135,7 +119,51 @@ Other important intermediate files include:
 
 ---
 
+## ⚙️ Dependencies
+
+This pipeline requires the following Python libraries. You can install them using `pip`:
+
+* `pandas`
+* `numpy`
+* `matplotlib`
+* `rich` (for optional folder tree previews)
+* `openpyxl` (for reading `Metadata.xlsx`)
+
+---
+## 🛠️ Installation
+
+Tested on Python 3.10–3.11 (macOS/Windows).
+
+```bash
+
+# (recommended) create a virtual environment
+python -m venv .venv && source .venv/bin/activate   # on Windows: .venv\Scripts\activate
+
+# install dependencies
+pip install -r requirements.txt
+
+```
+---
+
+## 📜 Code Versions
+
+* **Stages:**
+    * `VT_Processor_Py_Stage1_PulseDetector`: **v3.6.4**
+    * `VT_Processor_Py_Stage2_VoltageSelector`: **v1.7.0**
+    * `VT_Processor_Py_BatchPlotter`: **v1.2.3**
+* **Modules:**
+    * `VT_Module_Py_GlobalSettings`: v1.1.0
+    * `VT_Module_Py_System`: v1.0.2
+    * `VT_Module_Py_DataIO`: v1.2.0
+    * `VT_Module_Py_Processing`: v1.0.0
+    * `VT_Module_Py_PlotHelpers`: v1.0.1
+    * `VT_Module_Py_UserInput`: v1.0.1
+
+---
+
 ## Repository Tree
+```bash
+
 NeuroEng-Voltage-Transient-Processor/
 ├── README.md
 ├── LICENSE.txt
@@ -229,28 +257,6 @@ NeuroEng-Voltage-Transient-Processor/
                     ├── 📄 PyBP_Current_wBatchPlot_{custom_suffix}.svg
                     ├── 📄 PyBP_Voltage_wBatchPlot_{custom_suffix}.svg
                     └── ...
+
+```
 ---
-
-## ⚙️ Dependencies
-
-This pipeline requires the following Python libraries. You can install them using `pip`:
-
-* `pandas`
-* `numpy`
-* `matplotlib`
-* `rich` (for optional folder tree previews)
-* `openpyxl` (for reading `Metadata.xlsx`)
-
----
-## 🛠️ Installation
-
-Tested on Python 3.10–3.11 (macOS/Windows).
-
-```bash
-
-# (recommended) create a virtual environment
-python -m venv .venv && source .venv/bin/activate   # on Windows: .venv\Scripts\activate
-
-# install dependencies
-pip install -r requirements.txt
-
