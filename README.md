@@ -1,7 +1,7 @@
 # 🧩 Developer Notes (v2025-10)
 **Author:** Ifra Ilyas Ansari  
 **Created:** 2025-10-15  
-**Updated:** 2025-10-30
+**Updated:** 2025-11-11
 
 # NeuroEng Voltage Transient Processor
 This repository contains a set of Python scripts for processing, analyzing, and plotting voltage transient data from Tektronix oscilloscopes. The pipeline is broken into modular stages to handle pulse detection, data alignment, voltage extraction, and metadata merging.
@@ -168,8 +168,8 @@ NeuroEng-Voltage-Transient-Processor/
 ├── VT_Processor.html
 ├── __init__.py
 │
-├── VT_Processor_PyStage1_PulseDetector.py
-├── VT_Processor_PyStage2_VoltageSelector.py
+├── VT_Processor_Py_Stage1_PulseDetector.py
+├── VT_Processor_Py_Stage2_VoltageSelector.py
 ├── VT_Processor_Py_BatchPlotter.py
 │
 ├── VT_Module_Py_GlobalSettings.py
