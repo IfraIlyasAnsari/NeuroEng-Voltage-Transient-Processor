@@ -135,31 +135,6 @@ Other important intermediate files include:
 
 ---
 
-## ⚙️ Dependencies
-
-This pipeline requires the following Python libraries. You can install them using `pip`:
-
-* `pandas`
-* `numpy`
-* `matplotlib`
-* `rich` (for optional folder tree previews)
-* `openpyxl` (for reading `Metadata.xlsx`)
-
----
-## 🛠️ Installation
-
-Tested on Python 3.10–3.11 (macOS/Windows).
-
-```bash
-
-# (recommended) create a virtual environment
-python -m venv .venv && source .venv/bin/activate   # on Windows: .venv\Scripts\activate
-
-# install dependencies
-pip install -r requirements.txt
-
----
-
 ## Repository Tree
 NeuroEng-Voltage-Transient-Processor/
 ├── README.md
@@ -254,5 +229,28 @@ NeuroEng-Voltage-Transient-Processor/
                     ├── 📄 PyBP_Current_wBatchPlot_{custom_suffix}.svg
                     ├── 📄 PyBP_Voltage_wBatchPlot_{custom_suffix}.svg
                     └── ...
+---
+
+## ⚙️ Dependencies
+
+This pipeline requires the following Python libraries. You can install them using `pip`:
+
+* `pandas`
+* `numpy`
+* `matplotlib`
+* `rich` (for optional folder tree previews)
+* `openpyxl` (for reading `Metadata.xlsx`)
 
 ---
+## 🛠️ Installation
+
+Tested on Python 3.10–3.11 (macOS/Windows).
+
+```bash
+
+# (recommended) create a virtual environment
+python -m venv .venv && source .venv/bin/activate   # on Windows: .venv\Scripts\activate
+
+# install dependencies
+pip install -r requirements.txt
+
