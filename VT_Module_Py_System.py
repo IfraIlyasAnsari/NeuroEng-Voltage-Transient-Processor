@@ -156,9 +156,15 @@ def create_output_structure(
     # This folder sits *inside* the parent_data_folder
     output_main = parent_path / "VT_Py_Outputs"
     
-    # 2. Define timestamped run folder (e.g., "VT_Py_Outputs_PulseDetector_20251030_1443")
+    # 2. Define timestamped run folder 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-    stage_run_folder_name = f"VT_Py_Outputs_{stage_name}_{timestamp}" 
+    
+    # without timestamp  (e.g., "VT_Py_Outputs_PulseDetector")
+    stage_run_folder_name = f"VT_Py_Outputs_{stage_name}"         
+    
+    # with timestamp (e.g., "VT_Py_Outputs_PulseDetector_20251030_1443")          
+    # stage_run_folder_name = f"VT_Py_Outputs_{stage_name}_{timestamp}" 
+    
     stage_run_path = output_main / stage_run_folder_name
     
     # 3. Define 'Processed' subfolder
@@ -432,9 +438,9 @@ def print_latest_output_tree(output_main_folder: Path, stage_name: Optional[str]
     
     if latest_run_folder is None:
         if stage_name:
-            print(f"\n🚫 [System] Error: No timestamped run folders found under '{output_main_folder.name}' for stage '{stage_name}'.")
+            print(f"\n🚫 [System] Error: No run folders found under '{output_main_folder.name}' for stage '{stage_name}'.")
         else:
-            print(f"\n🚫 [System] Error: No timestamped run folders found under '{output_main_folder.name}'.")
+            print(f"\n🚫 [System] Error: No run folders found under '{output_main_folder.name}'.")
         return
 
     print("\n🌳 Displaying tree for the latest run found:")

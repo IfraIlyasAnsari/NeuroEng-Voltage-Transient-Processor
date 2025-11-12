@@ -5,7 +5,7 @@ NeuroEng Voltage Transient Processor - Pulse Detector (Stage 1)
 
 Author:     Ifra Ilyas Ansari
 Created:    2025-08-29
-Modified:   2025-10-30
+Modified:   2025-11-11
 Code:       VT_Processor_Py_Stage1_PulseDetector.py
 Version:    v3.7.1
 
@@ -49,7 +49,7 @@ OUTPUTS
 - **`PyPD_Metadata_Loaded.CSV`**: A snapshot of *only* the 18 loaded
   metadata columns, with no calculations.
 - **`PyPD_Metadata_Calculated.CSV`**: A snapshot of the processed and
-  re-ordered metadata (18 loaded + 6 calculated). **This is the input for Stage 2.**
+  re-ordered metadata (23 loaded + 6 calculated). **This is the input for Stage 2.**
 - **`PyPD_Summary.json` / `.txt`**: JSON and Text files detailing all parameters,
   files, and settings used for the run.
 - **Subfolders** containing the individual plots (`/PyPD_PNG_Files/`) and
@@ -278,9 +278,11 @@ def main(file_path=None, skip_rows=15):
     # 📚 LOAD METADATA + PROCESS + SAVE SNAPSHOTS
     # =========================================================================
     
-    # This list now contains *only* the 18 columns to *load*.
+    # ---- 1) Load Metadata file from the parent folder ----
+    
+    # This list now contains *only* the 23 columns to *load*.
     META_COLS = [   
-        # Base 18 columns to load
+        # Base 23 columns to load
         "FileID", 
         "Date", 
         "WaferID", 
@@ -298,16 +300,21 @@ def main(file_path=None, skip_rows=15):
         "InterphaseDelay(µs)",
         "Frequency(Hz)", 
         "OtherInfo", 
+        "TimeRecorded",	
+        "TotalDays", 
+        "TotalHours", 
+        "TotalMin",
+        "TotalSec", 
         "TotalPulses",
     ]
-
-    # ---- 1) Load Metadata file from the parent folder ----
+    
     # This will now *only* load the columns specified in META_COLS
     DF_Metadata_Loaded = load_metadata_excel(paths.parent, META_COLS)
     
     # ---- 2a) Save the "LOADED" data only----
     meta_csv_loaded_name = "PyPD_Metadata_Loaded.CSV"
     meta_csv_loaded_path = paths.stage / meta_csv_loaded_name
+    
     # Loaded snapshot
     DF_Metadata_Loaded = load_metadata_excel(paths.parent, META_COLS)
     DF_Metadata_Loaded = format_metadata_numeric(DF_Metadata_Loaded)

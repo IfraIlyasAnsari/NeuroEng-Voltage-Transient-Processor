@@ -5,7 +5,7 @@ NeuroEng Voltage Transient Processor - Module - Data Input/Output
 
 Author:     Ifra Ilyas Ansari
 Created:    2025-10-22
-Modified:   2025-10-30
+Modified:   2025-11-11
 Code:       VT_Module_Py_DataIO.py
 Version:    v1.3.3  
 
@@ -214,23 +214,45 @@ def format_metadata_numeric(df: pd.DataFrame) -> pd.DataFrame:
 
     # geometry (4 s.f.)
     for col in [c for c in out.columns if "ElectrodeDiameter" in c or "GSA" in c]:
-        out[col] = _num(out[col]).apply(lambda v: np.nan if pd.isna(v) else _round_sig(float(v), 4))
-
+        out[col] = _num(out[col]).apply(
+            lambda v: np.nan if pd.isna(v) else _round_sig(float(v), 4)
+            )
+        
     # current µA (4 s.f.)
     for col in [c for c in out.columns if "Current(" in c and "µA" in c]:
-        out[col] = _num(out[col]).apply(lambda v: np.nan if pd.isna(v) else _round_sig(float(v), 4))
+        out[col] = _num(out[col]).apply(
+            lambda v: np.nan if pd.isna(v) else _round_sig(float(v), 4)
+            )
 
     # charge & density (3 s.f.)
     for col in [c for c in out.columns if "ChargePerPhase" in c or "ChargeDensity" in c]:
-        out[col] = _num(out[col]).apply(lambda v: np.nan if pd.isna(v) else _round_sig(float(v), 3))
+        out[col] = _num(out[col]).apply(
+            lambda v: np.nan if pd.isna(v) else _round_sig(float(v), 3)
+            )
 
     # frequency & counts (ints)
     for col in [c for c in out.columns if c.endswith("(Hz)") or c == "TotalPulses"]:
         out[col] = _num(out[col]).round(0).astype("Int64")
 
-    # voltages (6 s.f. — change to 5 if you want)
+    # TotalDays (4 s.f)
+    for col in [c for c in out.columns if c in ["TotalDays"]]:
+        out[col] = _num(out[col]).apply(
+            lambda v: np.nan if pd.isna(v) else _round_sig(float(v), 4)
+            )
+    # TotalHours, TotalMin, TotalSec (3 s.f)
+    for col in [c for c in out.columns if c in ["TotalHours", "TotalMin", "TotalSec"]]:
+        out[col] = _num(out[col]).apply(
+            lambda v: np.nan if pd.isna(v) else _round_sig(float(v), 3)
+            )
+    # TotalPulses → integer (already handled above but re-ensure)
+    if "TotalPulses" in out.columns:
+        out["TotalPulses"] = _num(out["TotalPulses"]).round(0).astype("Int64")
+
+    # voltages (6 s.f.)
     for col in [c for c in VS_VOLTAGE_COLS if c in out.columns]:
-        out[col] = _num(out[col]).apply(lambda v: np.nan if pd.isna(v) else _round_sig(float(v), 6))
+        out[col] = _num(out[col]).apply(
+            lambda v: np.nan if pd.isna(v) else _round_sig(float(v), 6)
+            )
 
     return out
 
@@ -307,12 +329,30 @@ def process_metadata_snapshot(df: pd.DataFrame) -> pd.DataFrame:
     
     # Define the 18 loaded columns + 6 calculated columns
     FINAL_COLUMN_ORDER = [
-        # Loaded (18)
-        'FileID', 'Date', 'WaferID', 'DeviceID', 'ElectrodeID', 
-        'ElectrodeGeometry', 'ElectrodeDiameter(cm)', 
-        'ElectrodeMaterial', 'Electrolyte', 'TestInfo1', 'TestInfo2', 
-        'WaveformID', 'Current(µA)', 'PhaseWidth(µs)', 
-        'InterphaseDelay(µs)', 'Frequency(Hz)', 'OtherInfo', 'TotalPulses',
+        # Loaded (23)
+        "FileID", 
+        "Date", 
+        "WaferID", 
+        "DeviceID", 
+        "ElectrodeID", 
+        "ElectrodeGeometry", 
+        "ElectrodeDiameter(cm)", 
+        "ElectrodeMaterial", 
+        "Electrolyte", 
+        "TestInfo1", 
+        "TestInfo2",
+        "WaveformID", 
+        "Current(µA)", 
+        "PhaseWidth(µs)", 
+        "InterphaseDelay(µs)",
+        "Frequency(Hz)", 
+        "OtherInfo", 
+        "TimeRecorded",	
+        "TotalDays", 
+        "TotalHours", 
+        "TotalMin",
+        "TotalSec", 
+        "TotalPulses",
         # Calculated (6)
         'ElectrodeGSA(cm^2)',
         'ChargePerPhase(pC)',
