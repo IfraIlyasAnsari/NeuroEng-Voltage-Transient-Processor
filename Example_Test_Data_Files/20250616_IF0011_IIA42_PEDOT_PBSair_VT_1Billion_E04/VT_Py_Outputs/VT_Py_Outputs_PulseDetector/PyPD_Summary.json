@@ -1,0 +1,149 @@
+{
+    "timestamp": "20251111_2351",
+    "script": {
+        "name": "VT_Processor_Py_Stage1_PulseDetector",
+        "version": "v_unknown"
+    },
+    "system": {
+        "system": "Darwin",
+        "release": "24.6.0",
+        "python_version": "3.12.11",
+        "user": "ifraa"
+    },
+    "input_folder": "/Users/ifraa/Library/CloudStorage/OneDrive-UniversityOfOregon/Documents - O365_DekuLab/Electrochemistry/[99] IFRA_PEDOT Composites/{05} Data Analysis Files/NeuroEng-Voltage-Transient-Processor/Example_Test_Data_Files/20250616_IF0011_IIA42_PEDOT_PBSair_VT_1Billion_E04",
+    "output_folder": "/Users/ifraa/Library/CloudStorage/OneDrive-UniversityOfOregon/Documents - O365_DekuLab/Electrochemistry/[99] IFRA_PEDOT Composites/{05} Data Analysis Files/NeuroEng-Voltage-Transient-Processor/Example_Test_Data_Files/20250616_IF0011_IIA42_PEDOT_PBSair_VT_1Billion_E04/VT_Py_Outputs/VT_Py_Outputs_PulseDetector",
+    "n_files_processed": 6,
+    "file_keys": [
+        "TEK00001",
+        "TEK00002",
+        "TEK00003",
+        "TEK00004",
+        "TEK00005",
+        "TEK00006"
+    ],
+    "channel_map": {
+        "TIME": "TIME",
+        "VOLTAGE": "CH1",
+        "CURRENT": "CH2"
+    },
+    "axis_labels": {
+        "TIME": "Time (\u00b5s)",
+        "VOLTAGE": "Voltage (V)",
+        "CURRENT": "Current (A)"
+    },
+    "rcparams_subset": {
+        "font.family": [
+            "Arial"
+        ],
+        "font.size": 10.0,
+        "axes.labelsize": 12.0,
+        "axes.titlepad": 10.0,
+        "axes.titlesize": 14.0,
+        "axes.linewidth": 1.0,
+        "axes.facecolor": "white",
+        "axes.grid": true,
+        "grid.color": "#dddddd",
+        "grid.linestyle": ":",
+        "grid.linewidth": 0.5,
+        "xtick.labelsize": 10.0,
+        "ytick.labelsize": 10.0,
+        "lines.linewidth": 1.0,
+        "figure.figsize": [
+            7.2,
+            4.0
+        ],
+        "savefig.dpi": 300.0,
+        "legend.fontsize": 9.0,
+        "legend.loc": "upper left"
+    },
+    "pulse_params": {
+        "NOISE_MULT": 6.0,
+        "MIN_CURR_THRESHOLD_AMPS": 5e-06,
+        "FRAC_OF_PEAK": 0.07,
+        "MIN_PHASE_WIDTH_\u00b5s": 20.0,
+        "PULSE_AMPL_SYMMETRY_BIAS": 0.25,
+        "MIN_PHASE_HOLE_WIDTH_\u00b5s": 60.0,
+        "MAX_INTERPHASE_WIDTH_\u00b5s": 500.0,
+        "PULSE_PAD_\u00b5s": 200.0,
+        "PULSE_START_\u00b5s": 0.0,
+        "PULSE_OFFSET_\u00b5s": -200.0,
+        "XRANGE_EXTRA_\u00b5s": 100.0,
+        "X_MAJOR_TICK_\u00b5s": 100.0,
+        "X_MINOR_PER_MAJOR": 2
+    },
+    "offset_summary_\u00b5s": {
+        "TEK00001": {
+            "status": "detected",
+            "detected_start_\u00b5s": -199.2,
+            "offset_start_\u00b5s": -200.0,
+            "delta_\u00b5s": -0.8000000000000114
+        },
+        "TEK00002": {
+            "status": "detected",
+            "detected_start_\u00b5s": -199.2,
+            "offset_start_\u00b5s": -200.0,
+            "delta_\u00b5s": -0.8000000000000114
+        },
+        "TEK00003": {
+            "status": "detected",
+            "detected_start_\u00b5s": -199.2,
+            "offset_start_\u00b5s": -200.0,
+            "delta_\u00b5s": -0.8000000000000114
+        },
+        "TEK00004": {
+            "status": "detected",
+            "detected_start_\u00b5s": -199.2,
+            "offset_start_\u00b5s": -200.0,
+            "delta_\u00b5s": -0.8000000000000114
+        },
+        "TEK00005": {
+            "status": "detected",
+            "detected_start_\u00b5s": -199.2,
+            "offset_start_\u00b5s": -200.0,
+            "delta_\u00b5s": -0.8000000000000114
+        },
+        "TEK00006": {
+            "status": "raw_only",
+            "detected_start_\u00b5s": null,
+            "offset_start_\u00b5s": null,
+            "delta_\u00b5s": null
+        }
+    },
+    "artifacts": {
+        "metadata_loaded": "PyPD_Metadata_Loaded.CSV",
+        "metadata_calculated": "PyPD_Metadata_Calculated.CSV",
+        "plots": [
+            "PyPD_TEK00001_AutoOffset.png",
+            "PyPD_TEK00002_AutoOffset.png",
+            "PyPD_TEK00003_AutoOffset.png",
+            "PyPD_TEK00004_AutoOffset.png",
+            "PyPD_TEK00005_AutoOffset.png",
+            "PyPD_TEK00006_AutoOffset.png"
+        ],
+        "csvs": [
+            "PyPD_TEK00001_AutoOffset.CSV",
+            "PyPD_TEK00002_AutoOffset.CSV",
+            "PyPD_TEK00003_AutoOffset.CSV",
+            "PyPD_TEK00004_AutoOffset.CSV",
+            "PyPD_TEK00005_AutoOffset.CSV",
+            "PyPD_TEK00006_AutoOffset.CSV",
+            "PyPD_TEK00001_RawTime\u00b5s.CSV",
+            "PyPD_TEK00002_RawTime\u00b5s.CSV",
+            "PyPD_TEK00003_RawTime\u00b5s.CSV",
+            "PyPD_TEK00004_RawTime\u00b5s.CSV",
+            "PyPD_TEK00005_RawTime\u00b5s.CSV",
+            "PyPD_TEK00006_RawTime\u00b5s.CSV",
+            "PyPD_TEK00001_Detected.CSV",
+            "PyPD_TEK00002_Detected.CSV",
+            "PyPD_TEK00003_Detected.CSV",
+            "PyPD_TEK00004_Detected.CSV",
+            "PyPD_TEK00005_Detected.CSV",
+            "PyPD_TEK00006_Detected.CSV"
+        ],
+        "pickles": [
+            "PyPD_Dictionary_AllDataFiles_wAutoOffset.pkl",
+            "PyPD_Dictionary_AllDataFiles_wRawTime\u00b5s.pkl",
+            "PyPD_Dictionary_AllDataFiles_wDetected.pkl"
+        ]
+    }
+}

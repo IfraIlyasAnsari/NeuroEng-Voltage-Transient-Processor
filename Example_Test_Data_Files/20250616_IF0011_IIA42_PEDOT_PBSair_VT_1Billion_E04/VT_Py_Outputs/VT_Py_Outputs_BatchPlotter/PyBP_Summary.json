@@ -1,0 +1,103 @@
+{
+    "experiment_name": "20250616_IF0011_IIA42_PEDOT_PBSair",
+    "suffix": "",
+    "timestamp": "20251112_0000",
+    "input_folder": "/Users/ifraa/Library/CloudStorage/OneDrive-UniversityOfOregon/Documents - O365_DekuLab/Electrochemistry/[99] IFRA_PEDOT Composites/{05} Data Analysis Files/NeuroEng-Voltage-Transient-Processor/Example_Test_Data_Files/20250616_IF0011_IIA42_PEDOT_PBSair_VT_1Billion_E04",
+    "output_folder": "/Users/ifraa/Library/CloudStorage/OneDrive-UniversityOfOregon/Documents - O365_DekuLab/Electrochemistry/[99] IFRA_PEDOT Composites/{05} Data Analysis Files/NeuroEng-Voltage-Transient-Processor/Example_Test_Data_Files/20250616_IF0011_IIA42_PEDOT_PBSair_VT_1Billion_E04/VT_Py_Outputs/VT_Py_Outputs_BatchPlotter",
+    "raw_files": [
+        "TEK00001",
+        "TEK00002",
+        "TEK00003",
+        "TEK00004",
+        "TEK00005",
+        "TEK00006"
+    ],
+    "xaxis_range_\u00b5s": [
+        -100.0,
+        600.0
+    ],
+    "offset_applied_\u00b5s": {
+        "TEK00001": 0.0,
+        "TEK00002": 0.0,
+        "TEK00003": 0.0,
+        "TEK00004": 0.0,
+        "TEK00005": 0.0,
+        "TEK00006": 0.0
+    },
+    "DICT_Legend_Label": {
+        "TEK00001_Raw": "TEK00001",
+        "TEK00002_Raw": "TEK00002",
+        "TEK00003_Raw": "TEK00003",
+        "TEK00004_Raw": "TEK00004",
+        "TEK00005_Raw": "TEK00005",
+        "TEK00006_Raw": "TEK00006"
+    },
+    "plot_titles": {
+        "V": "Voltage vs Time",
+        "I": "Current vs Time"
+    },
+    "save_formats": [
+        "png",
+        "svg"
+    ],
+    "n_files_processed": 6,
+    "n_traces": {
+        "voltage": 6,
+        "current": 6
+    },
+    "artifacts": {
+        "plots": [
+            "PyBP_Voltage",
+            "PyBP_Current"
+        ],
+        "csvs": [
+            "PyBP_TEK00001_Raw.CSV",
+            "PyBP_TEK00002_Raw.CSV",
+            "PyBP_TEK00003_Raw.CSV",
+            "PyBP_TEK00004_Raw.CSV",
+            "PyBP_TEK00005_Raw.CSV",
+            "PyBP_TEK00006_Raw.CSV"
+        ],
+        "pickles": [
+            "PyBP_Dictionary_AllDataFiles_Processed.pkl"
+        ]
+    },
+    "rcparams_subset": {
+        "font.family": [
+            "Arial"
+        ],
+        "font.size": 10.0,
+        "axes.labelsize": 12.0,
+        "axes.labelweight": "bold",
+        "axes.titlesize": 14.0,
+        "axes.titlepad": 10.0,
+        "axes.linewidth": 1.0,
+        "axes.facecolor": "white",
+        "axes.grid": true,
+        "xtick.labelsize": 10.0,
+        "ytick.labelsize": 10.0,
+        "xtick.major.width": 1.0,
+        "ytick.major.width": 1.0,
+        "lines.linewidth": 1.0,
+        "figure.figsize": [
+            7.2,
+            4.0
+        ],
+        "savefig.dpi": 300.0
+    },
+    "colormap": {
+        "name": "viridis",
+        "reverse": false,
+        "n_traces": 6
+    },
+    "script": {
+        "name": "VT_Processor_Py_BatchPlotter",
+        "version": "v_unknown"
+    },
+    "system": {
+        "system": "Darwin",
+        "release": "24.6.0",
+        "python_version": "3.12.11",
+        "user": "ifraa"
+    }
+}

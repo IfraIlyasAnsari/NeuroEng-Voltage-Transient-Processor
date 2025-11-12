@@ -1,0 +1,63 @@
+================================================================================
+VT PIPELINE SUMMARY: VT_Processor_Py_Stage2_VoltageSelector
+================================================================================
+Timestamp:       20251111_2357
+Script Version:  v_unknown
+Input Folder:    N/A
+Output Folder:   /Users/ifraa/Library/CloudStorage/OneDrive-UniversityOfOregon/Documents - O365_DekuLab/Electrochemistry/[99] IFRA_PEDOT Composites/{05} Data Analysis Files/NeuroEng-Voltage-Transient-Processor/Example_Test_Data_Files/20250616_IF0011_IIA42_PEDOT_PBSair_VT_1Billion_E04/VT_Py_Outputs/VT_Py_Outputs_VoltageSelector
+Files Processed: 6
+
+--- Processed Files ---
+    • TEK00001
+    • TEK00002
+    • TEK00003
+    • TEK00004
+    • TEK00005
+    • TEK00006
+
+--- Generated Artifacts ---
+Metadata (Reference): PyVS_Metadata_Reference.CSV
+Summary CSV:          PyVS_VoltageSummary_Final.CSV
+Plots:
+    • PyVS_TEK00001_DetectedVals_wOverlay.png
+    • PyVS_TEK00001_SelectedVals_wOverlay.png
+    • PyVS_TEK00002_DetectedVals_wOverlay.png
+    • PyVS_TEK00002_SelectedVals_wOverlay.png
+    • PyVS_TEK00003_DetectedVals_wOverlay.png
+    • PyVS_TEK00003_SelectedVals_wOverlay.png
+    • PyVS_TEK00004_DetectedVals_wOverlay.png
+    • PyVS_TEK00004_SelectedVals_wOverlay.png
+    • PyVS_TEK00005_DetectedVals_wOverlay.png
+    • PyVS_TEK00005_SelectedVals_wOverlay.png
+
+Summaries:
+    • PyVS_Summary.json
+    • PyVS_Summary.txt
+
+
+🌳 Output Folder Tree
+----------------------------------------
+📂 VT_Py_Outputs_VoltageSelector
+├── 📂 ProcessedDataFiles
+│   ├── 📂 PyVS_CSV_Files
+│   ├── 📂 PyVS_ExtraInfo_Files
+│   │   ├── 📄 PyVS_TEK00001_DetectedVals.CSV
+│   │   ├── 📄 PyVS_TEK00001_DetectedVals_wOverlay.png
+│   │   ├── 📄 PyVS_TEK00002_DetectedVals.CSV
+│   │   ├── 📄 PyVS_TEK00002_DetectedVals_wOverlay.png
+│   │   ├── 📄 PyVS_TEK00003_DetectedVals.CSV
+│   │   ├── 📄 PyVS_TEK00003_DetectedVals_wOverlay.png
+│   │   ├── 📄 PyVS_TEK00004_DetectedVals.CSV
+│   │   ├── 📄 PyVS_TEK00004_DetectedVals_wOverlay.png
+│   │   ├── 📄 PyVS_TEK00005_DetectedVals.CSV
+│   │   └── 📄 PyVS_TEK00005_DetectedVals_wOverlay.png
+│   └── 📂 PyVS_PNG_Files
+│       ├── 📄 PyVS_TEK00001_SelectedVals_wOverlay.png
+│       ├── 📄 PyVS_TEK00002_SelectedVals_wOverlay.png
+│       ├── 📄 PyVS_TEK00003_SelectedVals_wOverlay.png
+│       ├── 📄 PyVS_TEK00004_SelectedVals_wOverlay.png
+│       └── 📄 PyVS_TEK00005_SelectedVals_wOverlay.png
+├── 📄 PyVS_Dictionary_AllDataFiles_SelectedVals.pkl
+├── 📄 PyVS_Summary.json
+├── 📄 PyVS_Summary.txt
+└── 📄 PyVS_VoltageSummary_Final.CSV

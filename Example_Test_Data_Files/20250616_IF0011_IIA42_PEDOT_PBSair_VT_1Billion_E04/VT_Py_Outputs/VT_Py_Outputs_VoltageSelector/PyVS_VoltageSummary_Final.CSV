@@ -1,0 +1,13 @@
+FileID,Date,WaferID,DeviceID,ElectrodeID,ElectrodeGeometry,ElectrodeDiameter(cm),ElectrodeMaterial,Electrolyte,TestInfo1,TestInfo2,WaveformID,Current(µA),PhaseWidth(µs),InterphaseDelay(µs),Frequency(Hz),OtherInfo,TimeRecorded,TotalDays,TotalHours,TotalMin,TotalSec,TotalPulses,ElectrodeGSA(cm^2),ChargePerPhase(pC),ChargePerPhase(nC),ChargePerPhase(mC),ChargePerPhase(C),ChargeDensityPerPhase(mC/cm^2),Eipp (V1),V2,Ec peak (V3),Emc (V4),E IPend (V5),Vacc leading (V2-V1),Vacc trailing (V3-V4),ΔV drive (V3-V1),ΔEp (V3-V2)
+TEK00001,20250616.0,IF0011,IIA42,E04,Circle,0.005,PEDOT,PBSair,VT,1Billion,BiphasicSymmetricCathodalFirst,350.0,200.0,100.0,500,,2025-06-16 20:40:00,0.0,0.0,0.0,0.0,0,1.963e-05,70000.0,70.0,7e-05,7e-08,3.57,-0.0133351,-1.37466,-1.92583,-0.551226,-0.326695,-1.36133,-1.37461,-1.9125,-0.55117
+TEK00002,20250616.0,IF0011,IIA42,E04,Circle,0.005,PEDOT,PBSair,VT,1Billion,BiphasicSymmetricCathodalFirst,350.0,200.0,100.0,500,,2025-06-17 10:40:00,0.5833,14.0,840.0,50400.0,25200000,1.963e-05,70000.0,70.0,7e-05,7e-08,3.57,-0.000589259,-1.39145,-1.92317,-0.514339,-0.302542,-1.39086,-1.40883,-1.92258,-0.53172
+TEK00003,20250616.0,IF0011,IIA42,E04,Circle,0.005,PEDOT,PBSair,VT,1Billion,BiphasicSymmetricCathodalFirst,350.0,200.0,100.0,500,,2025-06-18 09:30:00,1.535,36.8,2210.0,133000.0,66300000,1.963e-05,70000.0,70.0,7e-05,7e-08,3.57,-0.00812224,-1.43891,-1.9825,-0.5157,-0.307575,-1.43078,-1.4668,-1.97437,-0.54359
+TEK00004,20250616.0,IF0011,IIA42,E04,Circle,0.005,PEDOT,PBSair,VT,1Billion,BiphasicSymmetricCathodalFirst,350.0,200.0,100.0,500,,2025-06-19 11:40:00,2.625,63.0,3780.0,227000.0,113400000,1.963e-05,70000.0,70.0,7e-05,7e-08,3.57,-0.0113282,-1.56854,-2.06052,-0.466696,-0.268326,-1.55721,-1.59383,-2.04919,-0.49198
+TEK00005,20250616.0,IF0011,IIA42,E04,Circle,0.005,PEDOT,PBSair,VT,1Billion,BiphasicSymmetricCathodalFirst,350.0,200.0,100.0,500,,2025-06-19 11:40:00,2.625,63.0,3780.0,227000.0,113400000,1.963e-05,70000.0,70.0,7e-05,7e-08,3.57,-0.0079648,-1.65482,-2.24117,-0.557784,-0.35531,-1.64686,-1.68339,-2.2332,-0.58635
+TEK00006,20250616.0,IF0011,IIA42,E04,Circle,0.005,PEDOT,PBSair,VT,1Billion,BiphasicSymmetricCathodalFirst,350.0,200.0,100.0,500,,2025-06-20 13:40:00,3.708,89.0,5340.0,320000.0,160200000,1.963e-05,70000.0,70.0,7e-05,7e-08,3.57,,,,,,,,,
+nan,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+nan,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+nan,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+nan,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+nan,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+nan,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,

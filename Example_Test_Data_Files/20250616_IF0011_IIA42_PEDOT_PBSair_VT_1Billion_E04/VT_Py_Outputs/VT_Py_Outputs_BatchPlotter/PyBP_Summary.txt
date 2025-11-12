@@ -1,0 +1,52 @@
+================================================================================
+VT PIPELINE SUMMARY: VT_Processor_Py_BatchPlotter
+================================================================================
+Timestamp:       20251112_0000
+Script Version:  v_unknown
+Input Folder:    /Users/ifraa/Library/CloudStorage/OneDrive-UniversityOfOregon/Documents - O365_DekuLab/Electrochemistry/[99] IFRA_PEDOT Composites/{05} Data Analysis Files/NeuroEng-Voltage-Transient-Processor/Example_Test_Data_Files/20250616_IF0011_IIA42_PEDOT_PBSair_VT_1Billion_E04
+Output Folder:   /Users/ifraa/Library/CloudStorage/OneDrive-UniversityOfOregon/Documents - O365_DekuLab/Electrochemistry/[99] IFRA_PEDOT Composites/{05} Data Analysis Files/NeuroEng-Voltage-Transient-Processor/Example_Test_Data_Files/20250616_IF0011_IIA42_PEDOT_PBSair_VT_1Billion_E04/VT_Py_Outputs/VT_Py_Outputs_BatchPlotter
+Files Processed: 6
+
+--- Processed Files ---
+    - (None)
+
+--- Generated Artifacts ---
+Plots:
+    • PyBP_Voltage
+    • PyBP_Current
+
+CSVs:
+    • PyBP_TEK00001_Raw.CSV
+    • PyBP_TEK00002_Raw.CSV
+    • PyBP_TEK00003_Raw.CSV
+    • PyBP_TEK00004_Raw.CSV
+    • PyBP_TEK00005_Raw.CSV
+    • PyBP_TEK00006_Raw.CSV
+
+Pickles:
+    • PyBP_Dictionary_AllDataFiles_Processed.pkl
+
+Summaries:
+    • PyBP_Summary.json
+    • PyBP_Summary.txt
+
+
+🌳 Output Folder Tree
+----------------------------------------
+📂 VT_Py_Outputs_BatchPlotter
+├── 📂 ProcessedDataFiles
+│   ├── 📂 PyBP_CSV_Files
+│   │   ├── 📄 PyBP_TEK00001_Raw.CSV
+│   │   ├── 📄 PyBP_TEK00002_Raw.CSV
+│   │   ├── 📄 PyBP_TEK00003_Raw.CSV
+│   │   ├── 📄 PyBP_TEK00004_Raw.CSV
+│   │   ├── 📄 PyBP_TEK00005_Raw.CSV
+│   │   └── 📄 PyBP_TEK00006_Raw.CSV
+│   ├── 📂 PyBP_ExtraInfo_Files
+│   └── 📂 PyBP_PNG_Files
+│       ├── 📄 PyBP_Colormap_Preview.png
+│       ├── 📄 PyBP_Current.png
+│       └── 📄 PyBP_Voltage.png
+├── 📄 PyBP_Dictionary_AllDataFiles_Processed.pkl
+├── 📄 PyBP_Summary.json
+└── 📄 PyBP_Summary.txt

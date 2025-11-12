@@ -1,0 +1,13 @@
+FileID,Date,WaferID,DeviceID,ElectrodeID,ElectrodeGeometry,ElectrodeDiameter(cm),ElectrodeMaterial,Electrolyte,TestInfo1,TestInfo2,WaveformID,Current(µA),PhaseWidth(µs),InterphaseDelay(µs),Frequency(Hz),OtherInfo,TimeRecorded,TotalDays,TotalHours,TotalMin,TotalSec,TotalPulses,ElectrodeGSA(cm^2),ChargePerPhase(pC),ChargePerPhase(nC),ChargePerPhase(mC),ChargePerPhase(C),ChargeDensityPerPhase(mC/cm^2)
+TEK00001,20250616.0,IF0011,IIA42,E04,Circle,0.005,PEDOT,PBSair,VT,1Billion,BiphasicSymmetricCathodalFirst,350.0,200.0,100.0,500,,2025-06-16 20:40:00,0.0,0.0,0.0,0.0,0,1.963e-05,70000.0,70.0,7e-05,7e-08,3.57
+TEK00002,20250616.0,IF0011,IIA42,E04,Circle,0.005,PEDOT,PBSair,VT,1Billion,BiphasicSymmetricCathodalFirst,350.0,200.0,100.0,500,,2025-06-17 10:40:00,0.5833,14.0,840.0,50400.0,25200000,1.963e-05,70000.0,70.0,7e-05,7e-08,3.57
+TEK00003,20250616.0,IF0011,IIA42,E04,Circle,0.005,PEDOT,PBSair,VT,1Billion,BiphasicSymmetricCathodalFirst,350.0,200.0,100.0,500,,2025-06-18 09:30:00,1.535,36.8,2210.0,133000.0,66300000,1.963e-05,70000.0,70.0,7e-05,7e-08,3.57
+TEK00004,20250616.0,IF0011,IIA42,E04,Circle,0.005,PEDOT,PBSair,VT,1Billion,BiphasicSymmetricCathodalFirst,350.0,200.0,100.0,500,,2025-06-19 11:40:00,2.625,63.0,3780.0,227000.0,113400000,1.963e-05,70000.0,70.0,7e-05,7e-08,3.57
+TEK00005,20250616.0,IF0011,IIA42,E04,Circle,0.005,PEDOT,PBSair,VT,1Billion,BiphasicSymmetricCathodalFirst,350.0,200.0,100.0,500,,2025-06-19 11:40:00,2.625,63.0,3780.0,227000.0,113400000,1.963e-05,70000.0,70.0,7e-05,7e-08,3.57
+TEK00006,20250616.0,IF0011,IIA42,E04,Circle,0.005,PEDOT,PBSair,VT,1Billion,BiphasicSymmetricCathodalFirst,350.0,200.0,100.0,500,,2025-06-20 13:40:00,3.708,89.0,5340.0,320000.0,160200000,1.963e-05,70000.0,70.0,7e-05,7e-08,3.57
+,nan,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,nan,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,nan,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,nan,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,nan,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,nan,,,,,,,,,,,,,,,,,,,,,,,,,,,

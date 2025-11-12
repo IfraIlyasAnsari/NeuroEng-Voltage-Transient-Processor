@@ -1,0 +1,114 @@
+{
+    "timestamp": "20251111_2357",
+    "script": {
+        "name": "VT_Processor_Py_Stage2_VoltageSelector",
+        "version": "v_unknown"
+    },
+    "system": {
+        "system": "Darwin",
+        "release": "24.6.0",
+        "python_version": "3.12.11",
+        "user": "ifraa"
+    },
+    "input_file_pkl": "/Users/ifraa/Library/CloudStorage/OneDrive-UniversityOfOregon/Documents - O365_DekuLab/Electrochemistry/[99] IFRA_PEDOT Composites/{05} Data Analysis Files/NeuroEng-Voltage-Transient-Processor/Example_Test_Data_Files/20250616_IF0011_IIA42_PEDOT_PBSair_VT_1Billion_E04/VT_Py_Outputs/VT_Py_Outputs_PulseDetector/PyPD_Dictionary_AllDataFiles_wAutoOffset.pkl",
+    "input_file_metadata": "/Users/ifraa/Library/CloudStorage/OneDrive-UniversityOfOregon/Documents - O365_DekuLab/Electrochemistry/[99] IFRA_PEDOT Composites/{05} Data Analysis Files/NeuroEng-Voltage-Transient-Processor/Example_Test_Data_Files/20250616_IF0011_IIA42_PEDOT_PBSair_VT_1Billion_E04/VT_Py_Outputs/VT_Py_Outputs_PulseDetector/PyPD_Metadata_Calculated.CSV",
+    "output_folder": "/Users/ifraa/Library/CloudStorage/OneDrive-UniversityOfOregon/Documents - O365_DekuLab/Electrochemistry/[99] IFRA_PEDOT Composites/{05} Data Analysis Files/NeuroEng-Voltage-Transient-Processor/Example_Test_Data_Files/20250616_IF0011_IIA42_PEDOT_PBSair_VT_1Billion_E04/VT_Py_Outputs/VT_Py_Outputs_VoltageSelector",
+    "n_files_processed": 6,
+    "file_keys": [
+        "TEK00001",
+        "TEK00002",
+        "TEK00003",
+        "TEK00004",
+        "TEK00005",
+        "TEK00006"
+    ],
+    "user_time_points_\u00b5s": {
+        "TEK00001": [
+            -25.0,
+            1.0,
+            198.0,
+            201.0,
+            292.0
+        ],
+        "TEK00002": [
+            -25.0,
+            1.0,
+            198.0,
+            201.0,
+            292.0
+        ],
+        "TEK00003": [
+            -25.0,
+            1.0,
+            198.0,
+            201.0,
+            292.0
+        ],
+        "TEK00004": [
+            -25.0,
+            1.0,
+            198.0,
+            201.0,
+            292.0
+        ],
+        "TEK00005": [
+            -25.0,
+            1.0,
+            198.0,
+            201.0,
+            292.0
+        ],
+        "TEK00006": []
+    },
+    "user_time_limits_\u00b5s": {
+        "TEK00001": [
+            -300.0,
+            800.0
+        ],
+        "TEK00002": [
+            -300.0,
+            800.0
+        ],
+        "TEK00003": [
+            -300.0,
+            800.0
+        ],
+        "TEK00004": [
+            -300.0,
+            800.0
+        ],
+        "TEK00005": [
+            -300.0,
+            800.0
+        ],
+        "TEK00006": [
+            null,
+            null
+        ]
+    },
+    "artifacts": {
+        "metadata_csv": "PyVS_Metadata_Reference.CSV",
+        "calculated_csv": "PyVS_VoltageSummary_CalculatedVals.CSV",
+        "summary_csv": "PyVS_VoltageSummary_Final.CSV",
+        "plots": [
+            "PyVS_TEK00001_DetectedVals_wOverlay.png",
+            "PyVS_TEK00001_SelectedVals_wOverlay.png",
+            "PyVS_TEK00002_DetectedVals_wOverlay.png",
+            "PyVS_TEK00002_SelectedVals_wOverlay.png",
+            "PyVS_TEK00003_DetectedVals_wOverlay.png",
+            "PyVS_TEK00003_SelectedVals_wOverlay.png",
+            "PyVS_TEK00004_DetectedVals_wOverlay.png",
+            "PyVS_TEK00004_SelectedVals_wOverlay.png",
+            "PyVS_TEK00005_DetectedVals_wOverlay.png",
+            "PyVS_TEK00005_SelectedVals_wOverlay.png"
+        ],
+        "detected_csvs": [
+            "PyVS_TEK00001_DetectedVals.CSV",
+            "PyVS_TEK00002_DetectedVals.CSV",
+            "PyVS_TEK00003_DetectedVals.CSV",
+            "PyVS_TEK00004_DetectedVals.CSV",
+            "PyVS_TEK00005_DetectedVals.CSV"
+        ],
+        "pickle": "PyVS_Dictionary_AllDataFiles_SelectedVals.pkl"
+    }
+}

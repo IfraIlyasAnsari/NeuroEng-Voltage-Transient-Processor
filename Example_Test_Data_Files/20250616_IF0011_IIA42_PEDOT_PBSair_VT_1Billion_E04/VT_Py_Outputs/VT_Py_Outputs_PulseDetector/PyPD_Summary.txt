@@ -1,0 +1,121 @@
+================================================================================
+VT PIPELINE SUMMARY: VT_Processor_Py_Stage1_PulseDetector
+================================================================================
+Timestamp:       20251111_2351
+Script Version:  v_unknown
+Input Folder:    /Users/ifraa/Library/CloudStorage/OneDrive-UniversityOfOregon/Documents - O365_DekuLab/Electrochemistry/[99] IFRA_PEDOT Composites/{05} Data Analysis Files/NeuroEng-Voltage-Transient-Processor/Example_Test_Data_Files/20250616_IF0011_IIA42_PEDOT_PBSair_VT_1Billion_E04
+Output Folder:   /Users/ifraa/Library/CloudStorage/OneDrive-UniversityOfOregon/Documents - O365_DekuLab/Electrochemistry/[99] IFRA_PEDOT Composites/{05} Data Analysis Files/NeuroEng-Voltage-Transient-Processor/Example_Test_Data_Files/20250616_IF0011_IIA42_PEDOT_PBSair_VT_1Billion_E04/VT_Py_Outputs/VT_Py_Outputs_PulseDetector
+Files Processed: 6
+
+--- Processed Files ---
+    • TEK00001
+    • TEK00002
+    • TEK00003
+    • TEK00004
+    • TEK00005
+    • TEK00006
+
+--- Pulse Detection Parameters ---
+   NOISE_MULT                = 6.0
+   MIN_CURR_THRESHOLD_AMPS   = 5e-06
+   FRAC_OF_PEAK              = 0.07
+   MIN_PHASE_WIDTH_µs        = 20.0
+   PULSE_AMPL_SYMMETRY_BIAS  = 0.25
+   MIN_PHASE_HOLE_WIDTH_µs   = 60.0
+   MAX_INTERPHASE_WIDTH_µs   = 500.0
+   PULSE_PAD_µs              = 200.0
+   PULSE_START_µs            = 0.0
+   PULSE_OFFSET_µs           = -200.0
+   XRANGE_EXTRA_µs           = 100.0
+   X_MAJOR_TICK_µs           = 100.0
+   X_MINOR_PER_MAJOR         = 2
+
+--- Pulse Time Offset Summary (µs) ---
+   File            | Status     | Detected Start   | Offset Start   | Delta     
+   ----------------------------------------------------------------------
+   TEK00001        | detected   | -199.20          | -200.00        | -0.80     
+   TEK00002        | detected   | -199.20          | -200.00        | -0.80     
+   TEK00003        | detected   | -199.20          | -200.00        | -0.80     
+   TEK00004        | detected   | -199.20          | -200.00        | -0.80     
+   TEK00005        | detected   | -199.20          | -200.00        | -0.80     
+   TEK00006        | raw_only   | N/A              | N/A            | N/A       
+
+--- Generated Artifacts ---
+Metadata (Loaded):    PyPD_Metadata_Loaded.CSV
+Metadata (Calculated): PyPD_Metadata_Calculated.CSV
+Plots:
+    • PyPD_TEK00001_AutoOffset.png
+    • PyPD_TEK00002_AutoOffset.png
+    • PyPD_TEK00003_AutoOffset.png
+    • PyPD_TEK00004_AutoOffset.png
+    • PyPD_TEK00005_AutoOffset.png
+    • PyPD_TEK00006_AutoOffset.png
+
+CSVs:
+    • PyPD_TEK00001_AutoOffset.CSV
+    • PyPD_TEK00002_AutoOffset.CSV
+    • PyPD_TEK00003_AutoOffset.CSV
+    • PyPD_TEK00004_AutoOffset.CSV
+    • PyPD_TEK00005_AutoOffset.CSV
+    • PyPD_TEK00006_AutoOffset.CSV
+    • PyPD_TEK00001_RawTimeµs.CSV
+    • PyPD_TEK00002_RawTimeµs.CSV
+    • PyPD_TEK00003_RawTimeµs.CSV
+    • PyPD_TEK00004_RawTimeµs.CSV
+    • PyPD_TEK00005_RawTimeµs.CSV
+    • PyPD_TEK00006_RawTimeµs.CSV
+    • PyPD_TEK00001_Detected.CSV
+    • PyPD_TEK00002_Detected.CSV
+    • PyPD_TEK00003_Detected.CSV
+    • PyPD_TEK00004_Detected.CSV
+    • PyPD_TEK00005_Detected.CSV
+    • PyPD_TEK00006_Detected.CSV
+
+Pickles:
+    • PyPD_Dictionary_AllDataFiles_wAutoOffset.pkl
+    • PyPD_Dictionary_AllDataFiles_wRawTimeµs.pkl
+    • PyPD_Dictionary_AllDataFiles_wDetected.pkl
+
+Summaries:
+    • PyPD_Summary.json
+    • PyPD_Summary.txt
+
+
+🌳 Output Folder Tree
+----------------------------------------
+📂 VT_Py_Outputs_PulseDetector
+├── 📂 ProcessedDataFiles
+│   ├── 📂 PyPD_CSV_Files
+│   │   ├── 📄 PyPD_TEK00001_AutoOffset.CSV
+│   │   ├── 📄 PyPD_TEK00002_AutoOffset.CSV
+│   │   ├── 📄 PyPD_TEK00003_AutoOffset.CSV
+│   │   ├── 📄 PyPD_TEK00004_AutoOffset.CSV
+│   │   ├── 📄 PyPD_TEK00005_AutoOffset.CSV
+│   │   └── 📄 PyPD_TEK00006_AutoOffset.CSV
+│   ├── 📂 PyPD_ExtraInfo_Files
+│   │   ├── 📄 PyPD_Dictionary_AllDataFiles_wDetected.pkl
+│   │   ├── 📄 PyPD_Dictionary_AllDataFiles_wRawTimeµs.pkl
+│   │   ├── 📄 PyPD_TEK00001_Detected.CSV
+│   │   ├── 📄 PyPD_TEK00001_RawTimeµs.CSV
+│   │   ├── 📄 PyPD_TEK00002_Detected.CSV
+│   │   ├── 📄 PyPD_TEK00002_RawTimeµs.CSV
+│   │   ├── 📄 PyPD_TEK00003_Detected.CSV
+│   │   ├── 📄 PyPD_TEK00003_RawTimeµs.CSV
+│   │   ├── 📄 PyPD_TEK00004_Detected.CSV
+│   │   ├── 📄 PyPD_TEK00004_RawTimeµs.CSV
+│   │   ├── 📄 PyPD_TEK00005_Detected.CSV
+│   │   ├── 📄 PyPD_TEK00005_RawTimeµs.CSV
+│   │   ├── 📄 PyPD_TEK00006_Detected.CSV
+│   │   └── 📄 PyPD_TEK00006_RawTimeµs.CSV
+│   └── 📂 PyPD_PNG_Files
+│       ├── 📄 PyPD_TEK00001_AutoOffset.png
+│       ├── 📄 PyPD_TEK00002_AutoOffset.png
+│       ├── 📄 PyPD_TEK00003_AutoOffset.png
+│       ├── 📄 PyPD_TEK00004_AutoOffset.png
+│       ├── 📄 PyPD_TEK00005_AutoOffset.png
+│       └── 📄 PyPD_TEK00006_AutoOffset.png
+├── 📄 PyPD_Dictionary_AllDataFiles_wAutoOffset.pkl
+├── 📄 PyPD_Metadata_Calculated.CSV
+├── 📄 PyPD_Metadata_Loaded.CSV
+├── 📄 PyPD_Summary.json
+└── 📄 PyPD_Summary.txt
